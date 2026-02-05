@@ -3,12 +3,12 @@ name: Build and push to GHCR
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "with-jdk" ]
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }} # owner/repo
+  IMAGE_NAME: ${{ github.repository }}-with-jdk # owner/repo
 
 jobs:
   build-and-push:
