@@ -18,6 +18,7 @@ RUN yum -y install \
       git \
       tar \
       which \
+      java-11-openjdk-devel \
     && yum clean all
 
 # Set up the standard rpmbuild tree for root
