@@ -31,7 +31,7 @@ jobs:
           df -h
 
       - name: Build ISO
-        run: ./live-iso/build.sh
+        run: bash ./live-iso/build.sh
 
       - name: Show build output
         if: always()
