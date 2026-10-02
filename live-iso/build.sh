@@ -21,9 +21,13 @@ echo "Cloning CentOS AltImages KIWI descriptions from:"
 echo "  ${UPSTREAM_REPO}"
 echo "Branch: ${UPSTREAM_BRANCH}"
 
-if ! git clone --depth 1 --branch "${UPSTREAM_BRANCH}" "${UPSTREAM_REPO}" "${UPSTREAM_DIR}"; then
+if ! git clone --branch "${UPSTREAM_BRANCH}" "${UPSTREAM_REPO}" "${UPSTREAM_DIR}"; then
   cat >&2 <<EOF
 ERROR: Unable to clone the CentOS AltImages KIWI descriptions.
+
+Note: Pagure serves this repository using Git's dumb HTTP transport, so this
+build intentionally performs a normal clone rather than a shallow (--depth)
+clone.
 
 The CentOS documentation currently points local builders at:
   https://pagure.io/centos-sig-alt-images/kiwi-descriptions.git
