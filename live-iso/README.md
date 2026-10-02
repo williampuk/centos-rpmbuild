@@ -2,7 +2,7 @@
 
 This directory builds a **CentOS Stream 10 Live ISO** with the RPM build toolchain used by this repository preinstalled.
 
-The image is based on the CentOS Alternative Images SIG's official KIWI description for the `c10s` branch. The build prefers the text-only `MIN-Live` profile. If the current upstream Stream 10 recipe does not expose `MIN-Live`, it falls back to another supported Live profile (preferring `GNOME-Live`) rather than silently building a non-Live image.
+The image is based on the CentOS Alternative Images SIG's KIWI description for the `c10s` branch. CentOS's current local-build documentation still points to the read-only Pagure repository; the newer GitLab migration target is not used because its `c10s` content does not currently contain the Live profiles required for this build. The build prefers the text-only `MIN-Live` profile. If the current upstream Stream 10 recipe does not expose `MIN-Live`, it falls back to another supported Live profile (preferring `GNOME-Live`) rather than silently building a non-Live image.
 
 ## Included packages
 
@@ -59,7 +59,7 @@ The resulting ISO, checksum, selected profile, and upstream commit are uploaded 
 
 ## How the build works
 
-1. Clone `https://gitlab.com/CentOS/AltImages/releng/kiwi-descriptions.git` at branch `c10s`.
+1. Clone `https://pagure.io/centos-sig-alt-images/kiwi-descriptions.git` at branch `c10s`.
 2. Parse the KIWI XML namespace-independently and print all profiles found.
 3. Prefer `MIN-Live`; if it is unavailable, select another supported `*-Live` profile.
 4. Add the packages from `packages.txt` only to the selected profile.
