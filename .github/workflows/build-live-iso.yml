@@ -49,6 +49,6 @@ jobs:
           path: |
             live-iso/out/*.iso
             live-iso/out/SHA256SUMS
-            live-iso/out/UPSTREAM_COMMIT.txt
+            live-iso/out/UPSTREAM_COMMIT.txt\n            live-iso/out/SELECTED_PROFILE.txt
           if-no-files-found: error
           retention-days: 7
