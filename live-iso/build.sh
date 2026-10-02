@@ -8,6 +8,7 @@ UPSTREAM_DIR="${WORK_DIR}/kiwi-descriptions"
 UPSTREAM_REPO="${UPSTREAM_REPO:-https://gitlab.com/CentOS/AltImages/releng/kiwi-descriptions.git}"
 UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-c10s}"
 CONTAINER_IMAGE="${CONTAINER_IMAGE:-quay.io/centos/centos:stream10}"
+PROFILE_FILE="${OUT_DIR}/SELECTED_PROFILE.txt"
 
 command -v git >/dev/null
 command -v docker >/dev/null
@@ -22,13 +23,21 @@ git clone --depth 1 --branch "${UPSTREAM_BRANCH}" "${UPSTREAM_REPO}" "${UPSTREAM
 git -C "${UPSTREAM_DIR}" rev-parse HEAD > "${OUT_DIR}/UPSTREAM_COMMIT.txt"
 python3 "${SCRIPT_DIR}/customize.py" \
   --config "${UPSTREAM_DIR}/config.xml" \
-  --packages "${SCRIPT_DIR}/packages.txt"
+  --packages "${SCRIPT_DIR}/packages.txt" \
+  --profile-out "${PROFILE_FILE}"
 
-echo "Building CentOS Stream 10 MIN-Live ISO with KIWI..."
+KIWI_PROFILE="$(tr -d '\r\n' < "${PROFILE_FILE}")"
+if [[ -z "${KIWI_PROFILE}" ]]; then
+  echo "ERROR: customize.py did not select a KIWI profile" >&2
+  exit 1
+fi
+
+echo "Building CentOS Stream 10 ${KIWI_PROFILE} ISO with KIWI..."
 docker run --rm --privileged \
   -v /dev:/dev \
   -v "${UPSTREAM_DIR}:/kiwi:rw" \
   -v "${OUT_DIR}:/out:rw" \
+  -e "KIWI_PROFILE=${KIWI_PROFILE}" \
   "${CONTAINER_IMAGE}" \
   bash -euxo pipefail -c '
     dnf -y install dnf-plugins-core epel-release
@@ -36,7 +45,7 @@ docker run --rm --privileged \
     dnf -y install kiwi policycoreutils
     kiwi-ng \
       --type=iso \
-      --profile=MIN-Live \
+      --profile="${KIWI_PROFILE}" \
       --color-output \
       system build \
       --description=/kiwi \
