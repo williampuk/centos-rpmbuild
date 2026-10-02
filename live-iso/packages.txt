@@ -1,0 +1,11 @@
+# Packages installed into the CentOS Stream 10 MIN-Live image.
+rpm-build
+rpmdevtools
+redhat-rpm-config
+yum-utils
+rpmlint
+gcc
+make
+git
+tar
+which
