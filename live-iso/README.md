@@ -32,7 +32,7 @@ Requirements:
 Run:
 
 ```bash
-./live-iso/build.sh
+bash ./live-iso/build.sh
 ```
 
 Artifacts are written to:
