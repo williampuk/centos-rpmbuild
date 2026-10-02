@@ -1,0 +1,54 @@
+name: Build CentOS Stream 10 Live RPM Builder ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "live-iso/**"
+      - ".github/workflows/build-live-iso.yml"
+  pull_request:
+    paths:
+      - "live-iso/**"
+      - ".github/workflows/build-live-iso.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-live-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          df -h
+
+      - name: Build ISO
+        run: ./live-iso/build.sh
+
+      - name: Show build output
+        if: always()
+        run: |
+          df -h
+          if [ -d live-iso/out ]; then
+            ls -lah live-iso/out
+            test ! -f live-iso/out/SHA256SUMS || cat live-iso/out/SHA256SUMS
+          fi
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: centos-stream-10-rpm-builder-live
+          path: |
+            live-iso/out/*.iso
+            live-iso/out/SHA256SUMS
+            live-iso/out/UPSTREAM_COMMIT.txt
+          if-no-files-found: error
+          retention-days: 7
