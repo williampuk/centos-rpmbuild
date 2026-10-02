@@ -8,7 +8,7 @@ UPSTREAM_DIR="${WORK_DIR}/kiwi-descriptions"
 UPSTREAM_REPO="${UPSTREAM_REPO:-https://pagure.io/centos-sig-alt-images/kiwi-descriptions.git}"
 UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-c10s}"
 CONTAINER_IMAGE="${CONTAINER_IMAGE:-quay.io/centos/centos:stream10}"
-PROFILE_FILE="${OUT_DIR}/SELECTED_PROFILE.txt"
+KIWI_PROFILE="${KIWI_PROFILE:-MIN-Live}"
 
 command -v git >/dev/null
 command -v docker >/dev/null
@@ -29,12 +29,8 @@ Note: Pagure serves this repository using Git's dumb HTTP transport, so this
 build intentionally performs a normal clone rather than a shallow (--depth)
 clone.
 
-The CentOS documentation currently points local builders at:
+Repository:
   https://pagure.io/centos-sig-alt-images/kiwi-descriptions.git
-
-The newer GitLab migration target is intentionally NOT used as a fallback,
-because its c10s branch has been observed to lack the Live profiles required
-for this build.
 EOF
   exit 1
 fi
@@ -43,16 +39,11 @@ echo "Upstream files:"
 find "${UPSTREAM_DIR}" -maxdepth 2 -type f -printf '  %P\n' | sort | head -100
 
 git -C "${UPSTREAM_DIR}" rev-parse HEAD > "${OUT_DIR}/UPSTREAM_COMMIT.txt"
+
+echo "Customizing KIWI profile: ${KIWI_PROFILE}"
 python3 "${SCRIPT_DIR}/customize.py" \
   --config "${UPSTREAM_DIR}/config.xml" \
-  --packages "${SCRIPT_DIR}/packages.txt" \
-  --profile-out "${PROFILE_FILE}"
-
-KIWI_PROFILE="$(tr -d '\r\n' < "${PROFILE_FILE}")"
-if [[ -z "${KIWI_PROFILE}" ]]; then
-  echo "ERROR: customize.py did not select a KIWI profile" >&2
-  exit 1
-fi
+  --packages "${SCRIPT_DIR}/packages.txt"
 
 echo "Building CentOS Stream 10 ${KIWI_PROFILE} ISO with KIWI..."
 docker run --rm --privileged \
@@ -65,6 +56,10 @@ docker run --rm --privileged \
     dnf -y install dnf-plugins-core epel-release
     dnf config-manager --set-enabled crb
     dnf -y install kiwi policycoreutils
+
+    echo "Available KIWI profiles:"
+    kiwi-ng --type=iso system profiles --description=/kiwi || true
+
     kiwi-ng \
       --type=iso \
       --profile="${KIWI_PROFILE}" \
