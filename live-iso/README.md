@@ -1,8 +1,8 @@
 # CentOS Stream 10 RPM-builder Live ISO
 
-This directory builds a small **CentOS Stream 10 `MIN-Live` ISO** with the RPM build toolchain used by this repository preinstalled.
+This directory builds a **CentOS Stream 10 Live ISO** with the RPM build toolchain used by this repository preinstalled.
 
-The image is based on the CentOS Alternative Images SIG's official KIWI description for the `c10s` branch. The build clones that upstream description, adds the packages in `packages.txt` to the `MIN-Live` profile, and runs KIWI inside a privileged CentOS Stream 10 container.
+The image is based on the CentOS Alternative Images SIG's official KIWI description for the `c10s` branch. The build prefers the text-only `MIN-Live` profile. If the current upstream Stream 10 recipe does not expose `MIN-Live`, it falls back to another supported Live profile (preferring `GNOME-Live`) rather than silently building a non-Live image.
 
 ## Included packages
 
@@ -17,7 +17,7 @@ The image is based on the CentOS Alternative Images SIG's official KIWI descript
 - `tar`
 - `which`
 
-`rpmlint` is supplied by EPEL 10. `customize.py` uses the EPEL repository already present in the upstream image description when available, and adds a build-only EPEL 10 repository when needed.
+`rpmlint` is supplied by EPEL 10. `customize.py` uses the EPEL repository already present in the upstream image description when available, and adds a profile-scoped EPEL 10 repository when needed.
 
 ## Build locally
 
@@ -41,10 +41,11 @@ Artifacts are written to:
 live-iso/out/
 ├── *.iso
 ├── SHA256SUMS
+├── SELECTED_PROFILE.txt
 └── UPSTREAM_COMMIT.txt
 ```
 
-`UPSTREAM_COMMIT.txt` records the exact CentOS KIWI description commit used for that build.
+`UPSTREAM_COMMIT.txt` records the exact CentOS KIWI description commit used for that build. `SELECTED_PROFILE.txt` records the exact upstream Live profile that was built.
 
 ## GitHub Actions
 
@@ -54,15 +55,16 @@ live-iso/out/
 - pull requests that modify this directory or the workflow; and
 - pushes to `main` affecting the ISO build.
 
-The resulting ISO, checksum, and upstream commit are uploaded as the `centos-stream-10-rpm-builder-live` workflow artifact.
+The resulting ISO, checksum, selected profile, and upstream commit are uploaded as the `centos-stream-10-rpm-builder-live` workflow artifact.
 
 ## How the build works
 
 1. Clone `https://gitlab.com/CentOS/AltImages/releng/kiwi-descriptions.git` at branch `c10s`.
-2. Validate that the upstream recipe still contains the `MIN-Live` profile.
-3. Add the packages from `packages.txt` only to that profile.
-4. Add a build-only EPEL 10 repository if the upstream recipe does not already have EPEL configured.
-5. Run `kiwi-ng --type=iso --profile=MIN-Live ...` in a privileged `quay.io/centos/centos:stream10` container.
-6. Generate `SHA256SUMS` for the resulting ISO.
+2. Parse the KIWI XML namespace-independently and print all profiles found.
+3. Prefer `MIN-Live`; if it is unavailable, select another supported `*-Live` profile.
+4. Add the packages from `packages.txt` only to the selected profile.
+5. Add a profile-scoped EPEL 10 repository if the upstream recipe does not already have EPEL configured.
+6. Run `kiwi-ng --type=iso --profile=<selected-profile> ...` in a privileged `quay.io/centos/centos:stream10` container.
+7. Generate `SHA256SUMS` for the resulting ISO.
 
-The upstream recipe is intentionally not vendored here, so each build starts from the current CentOS Stream 10 Alternative Images recipe while recording the exact upstream commit used.
+The upstream recipe is intentionally not vendored here, so each build starts from the current CentOS Stream 10 Alternative Images recipe while recording the exact upstream commit and profile used.
