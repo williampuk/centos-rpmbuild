@@ -1,4 +1,4 @@
-# Packages installed into the CentOS Stream 10 MIN-Live image.
+# Packages installed into the CentOS Stream 9 MIN-Live image.
 
 # RPM/build toolchain
 rpm-build

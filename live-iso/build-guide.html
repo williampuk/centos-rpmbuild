@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CentOS Stream 10 Live ISO Build Guide</title>
+<title>CentOS Stream 9 Live ISO Build Guide</title>
 <style>
 :root{--bg:#0b0f14;--p:#111821;--p2:#151e29;--t:#e7edf4;--m:#9caabd;--l:#273444;--a:#79c0ff;--g:#8bdb81;--w:#f2cc60;--r:#ff7b72;--c:#090d12}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -29,7 +29,7 @@ footer{border-top:1px solid var(--l);padding:28px;color:var(--m);text-align:cent
 </head>
 <body>
 <header><div class="hero">
-<div class="ey">CentOS Stream 10 · KIWI NG · Docker · GitHub Actions · RPM tooling</div>
+<div class="ey">CentOS Stream 9 · KIWI NG · Docker · GitHub Actions · RPM tooling</div>
 <h1>How the custom RPM-builder Live ISO works</h1>
 <p class="sub">A Linux-newbie-friendly guide to the build mechanism, the failures we hit, the engineering lessons, and how the finished Live environment can now burn ISO images to DVD.</p>
 </div></header>
@@ -52,7 +52,7 @@ footer{border-top:1px solid var(--l);padding:28px;color:var(--m);text-align:cent
 <main>
 <section id="goal">
 <h2>1. What we are building</h2>
-<p>The project produces a bootable <b>CentOS Stream 10 MIN-Live ISO</b> containing an RPM-development toolchain plus DVD-burning support.</p>
+<p>The project produces a bootable <b>CentOS Stream 9 MIN-Live ISO</b> containing an RPM-development toolchain plus DVD-burning support.</p>
 <pre><code>rpm-build
 rpmdevtools
 redhat-rpm-config
@@ -108,9 +108,9 @@ ISO = finished product</div>
         │     ├── live-iso/build.sh
         │     └── live-iso/packages.txt
         │
-        ├── clones CentOS AltImages c10s recipe
+        ├── clones CentOS AltImages c9s recipe
         │
-        └── starts privileged CentOS Stream 10 container
+        └── starts privileged CentOS Stream 9 container
                     │
                     ├── installs KIWI
                     ├── reads packages.txt
@@ -133,9 +133,9 @@ ISO = finished product</div>
 <li><code>actions/checkout</code> checks out this repository.</li>
 <li>The workflow deletes large preinstalled SDK directories to free disk space.</li>
 <li><code>bash ./live-iso/build.sh</code> runs the image build.</li>
-<li>The script clones the CentOS Alternative Images KIWI descriptions on branch <code>c10s</code>.</li>
+<li>The script clones the CentOS Alternative Images KIWI descriptions on branch <code>c9s</code>.</li>
 <li>The exact upstream Git commit SHA is written to <code>UPSTREAM_COMMIT.txt</code>.</li>
-<li>A privileged CentOS Stream 10 container starts, with the recipe, output directory, package list, and <code>/dev</code> mounted into it.</li>
+<li>A privileged CentOS Stream 9 container starts, with the recipe, output directory, package list, and <code>/dev</code> mounted into it.</li>
 <li>KIWI and build dependencies are installed in that disposable container.</li>
 <li>Every package name in <code>packages.txt</code> becomes a KIWI <code>--add-package=...</code> argument.</li>
 <li>KIWI builds the official <code>MIN-Live</code> profile plus our packages.</li>
@@ -257,7 +257,7 @@ xorriso -devices</code></pre>
 <div class="arch">Live USB
    │
    ▼
-CentOS Stream 10 Live
+CentOS Stream 9 Live
    ├── xorriso
    ├── /dev/sr0  ─────────────► DVD writer
    └── /mnt/source/image.iso
@@ -292,7 +292,7 @@ xorriso
       │
       │ uname -r
       ▼
-6.12.x-...el10.x86_64
+5.14.x-...el9.x86_64
       │
       ▼
 /lib/modules/&lt;same-version&gt;/build
@@ -302,7 +302,7 @@ kernel-devel files
       │
       ▼
 vendor/module source ──► make ──► .ko kernel module</div>
-<div class="box info"><b>Related package:</b> CentOS Stream 10 also publishes <code>kernel-devel-matched</code>, whose purpose is to pull matching <code>kernel-core</code> and <code>kernel-devel</code> versions together. The project currently adds the explicitly requested <code>kernel-devel</code> package.</div>
+<div class="box info"><b>Related package:</b> CentOS Stream 9 also publishes <code>kernel-devel-matched</code>, whose purpose is to pull matching <code>kernel-core</code> and <code>kernel-devel</code> versions together. The project currently adds the explicitly requested <code>kernel-devel</code> package.</div>
 </section>
 
 <section>
@@ -335,12 +335,12 @@ sha256sum -c SHA256SUMS</code></pre>
 <details><summary>DNF / YUM</summary><p>The package-management layer that resolves dependencies and downloads RPMs from configured repositories.</p></details>
 <details><summary>EPEL</summary><p>Extra Packages for Enterprise Linux, a repository providing additional software not shipped in the main enterprise-Linux repositories.</p></details>
 <details><summary>CRB</summary><p>A repository containing many development-oriented dependencies used for software building and some EPEL packages.</p></details>
-<details><summary>chkconfig</summary><p>A legacy SysV-service compatibility utility. CentOS Stream 10 normally uses systemd and <code>systemctl</code>, but some vendor or driver installers still call <code>chkconfig</code> while registering startup services. Having it installed can prevent those legacy installers from failing, but it is not itself a reboot command or a general fix for reboot hangs.</p></details>
+<details><summary>chkconfig</summary><p>A legacy SysV-service compatibility utility. CentOS Stream 9 normally uses systemd and <code>systemctl</code>, but some vendor or driver installers still call <code>chkconfig</code> while registering startup services. Having it installed can prevent those legacy installers from failing, but it is not itself a reboot command or a general fix for reboot hangs.</p></details>
 <details><summary>kernel-devel</summary><p>The CentOS package containing kernel headers, Makefiles, generated configuration, and other files needed to compile external kernel modules for a particular kernel version. Vendor driver installers commonly look for a path such as <code>/lib/modules/$(uname -r)/build</code>, which is supplied by the matching <code>kernel-devel</code> package.</p></details>
 <details><summary><code>/dev/sr0</code></summary><p>A common Linux device node for the first optical CD/DVD/BD drive. The exact number can vary.</p></details>
 <details><summary>xorriso</summary><p>A command-line tool for creating, inspecting, manipulating, and writing ISO 9660 optical-disc images.</p></details>
 <details><summary>Bind mount</summary><p>A way to expose a host directory/file at a path inside a container, such as mapping the upstream recipe to <code>/kiwi</code> and build outputs to <code>/out</code>.</p></details>
-<details><summary>Git branch vs commit</summary><p>A branch such as <code>c10s</code> is a moving reference. A commit SHA names one exact immutable snapshot. The build follows the branch but records the actual commit used.</p></details>
+<details><summary>Git branch vs commit</summary><p>A branch such as <code>c9s</code> is a moving reference. A commit SHA names one exact immutable snapshot. The build follows the branch but records the actual commit used.</p></details>
 <details><summary>Artifact</summary><p>A file produced by CI/CD, such as an ISO, executable, archive, report, or checksum file.</p></details>
 </section>
 
@@ -356,6 +356,6 @@ sha256sum -c SHA256SUMS</code></pre>
 </section>
 </main>
 </div>
-<footer>CentOS Stream 10 RPM-builder Live ISO learning guide · updated with DVD-burning support</footer>
+<footer>CentOS Stream 9 RPM-builder Live ISO learning guide · updated with DVD-burning support</footer>
 </body>
 </html>

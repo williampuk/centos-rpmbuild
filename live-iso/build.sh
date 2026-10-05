@@ -6,8 +6,8 @@ WORK_DIR="${WORK_DIR:-${SCRIPT_DIR}/.work}"
 OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/out}"
 UPSTREAM_DIR="${WORK_DIR}/kiwi-descriptions"
 UPSTREAM_REPO="${UPSTREAM_REPO:-https://pagure.io/centos-sig-alt-images/kiwi-descriptions.git}"
-UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-c10s}"
-CONTAINER_IMAGE="${CONTAINER_IMAGE:-quay.io/centos/centos:stream10}"
+UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-c9s}"
+CONTAINER_IMAGE="${CONTAINER_IMAGE:-quay.io/centos/centos:stream9}"
 KIWI_PROFILE="${KIWI_PROFILE:-MIN-Live}"
 
 command -v git >/dev/null
@@ -39,7 +39,7 @@ git -C "${UPSTREAM_DIR}" rev-parse HEAD > "${OUT_DIR}/UPSTREAM_COMMIT.txt"
 echo "Requested additional packages:"
 grep -Ev '^[[:space:]]*(#|$)' "${SCRIPT_DIR}/packages.txt" | sed 's/^/  - /'
 
-echo "Building CentOS Stream 10 ${KIWI_PROFILE} ISO with KIWI..."
+echo "Building CentOS Stream 9 ${KIWI_PROFILE} ISO with KIWI..."
 docker run --rm --privileged \
   -v /dev:/dev \
   -v "${UPSTREAM_DIR}:/kiwi:rw" \
