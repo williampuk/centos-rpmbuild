@@ -1,4 +1,6 @@
 # Packages installed into the CentOS Stream 10 MIN-Live image.
+
+# RPM/build toolchain
 rpm-build
 rpmdevtools
 redhat-rpm-config
@@ -9,4 +11,37 @@ make
 git
 tar
 which
+kernel-devel
+
+# Legacy SysV service compatibility (some vendor/driver installers expect this)
+chkconfig
+
+# Optical media
 xorriso
+
+# Network management
+NetworkManager
+NetworkManager-tui
+NetworkManager-wifi
+
+# Core network diagnostics
+iproute
+iputils
+
+# HTTP/download
+curl
+wget
+
+# DNS
+bind-utils
+
+# Interface/link diagnostics
+ethtool
+
+# Packet/path diagnostics
+tcpdump
+traceroute
+
+# Remote access and TCP/UDP testing
+openssh-clients
+nmap-ncat

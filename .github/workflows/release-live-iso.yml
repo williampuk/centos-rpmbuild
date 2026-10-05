@@ -56,7 +56,21 @@ jobs:
           release_name="centos-stream-10-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.iso"
           release_path="live-iso/out/${release_name}"
 
+          mapfile -t manifests < <(
+            find live-iso/out -maxdepth 1 -type f -name '*.packages' -print | sort
+          )
+
+          if (( ${#manifests[@]} != 1 )); then
+            echo "Expected exactly one KIWI package manifest, found ${#manifests[@]}:" >&2
+            printf '  %s\n' "${manifests[@]}" >&2
+            exit 1
+          fi
+
+          release_manifest_name="centos-stream-10-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.packages"
+          release_manifest_path="live-iso/out/${release_manifest_name}"
+
           mv "${isos[0]}" "${release_path}"
+          cp "${manifests[0]}" "${release_manifest_path}"
 
           (
             cd live-iso/out
@@ -73,6 +87,8 @@ jobs:
 
           echo "iso=${release_path}" >> "${GITHUB_OUTPUT}"
           echo "iso_name=${release_name}" >> "${GITHUB_OUTPUT}"
+          echo "packages=${release_manifest_path}" >> "${GITHUB_OUTPUT}"
+          echo "packages_name=${release_manifest_name}" >> "${GITHUB_OUTPUT}"
 
           echo "Release assets:"
           ls -lh live-iso/out
@@ -89,6 +105,7 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           assets=(
             "${{ steps.assets.outputs.iso }}"
+            "${{ steps.assets.outputs.packages }}"
             "live-iso/out/SHA256SUMS"
             "live-iso/out/UPSTREAM_COMMIT.txt"
             "live-iso/out/BUILD_INFO.txt"
@@ -121,6 +138,7 @@ jobs:
           name: centos-stream-10-rpm-builder-live-${{ github.ref_name }}
           path: |
             ${{ steps.assets.outputs.iso }}
+            ${{ steps.assets.outputs.packages }}
             live-iso/out/SHA256SUMS
             live-iso/out/UPSTREAM_COMMIT.txt
             live-iso/out/BUILD_INFO.txt

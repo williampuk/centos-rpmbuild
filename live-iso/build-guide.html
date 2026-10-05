@@ -63,7 +63,22 @@ make
 git
 tar
 which
-xorriso</code></pre>
+xorriso
+kernel-devel
+chkconfig
+NetworkManager
+NetworkManager-tui
+NetworkManager-wifi
+iproute
+iputils
+curl
+wget
+bind-utils
+ethtool
+tcpdump
+traceroute
+openssh-clients
+nmap-ncat</code></pre>
 <div class="box good"><b>Output:</b> GitHub Actions builds a bootable <code>.iso</code>, generates <code>SHA256SUMS</code>, and records the exact upstream CentOS KIWI recipe commit in <code>UPSTREAM_COMMIT.txt</code>.</div>
 </section>
 
@@ -183,6 +198,36 @@ live-iso/out/UPSTREAM_COMMIT.txt</code></pre>
 </div>
 </section>
 
+<section>
+<h2>Networking toolkit</h2>
+<p>The Live image explicitly installs a practical set of networking packages instead of relying on whatever the upstream <code>MIN-Live</code> profile happens to contain.</p>
+<table>
+<tr><th>Task</th><th>Command</th></tr>
+<tr><td>Configure interfaces/connections</td><td><code>nmcli</code></td></tr>
+<tr><td>Text-mode NetworkManager UI</td><td><code>nmtui</code></td></tr>
+<tr><td>Wi-Fi discovery/configuration</td><td><code>nmcli dev wifi</code></td></tr>
+<tr><td>Addresses/routes/links</td><td><code>ip</code></td></tr>
+<tr><td>Socket inspection</td><td><code>ss</code></td></tr>
+<tr><td>Reachability/path basics</td><td><code>ping</code>, <code>tracepath</code></td></tr>
+<tr><td>HTTP and downloads</td><td><code>curl</code>, <code>wget</code></td></tr>
+<tr><td>DNS troubleshooting</td><td><code>dig</code>, <code>nslookup</code></td></tr>
+<tr><td>NIC/link information</td><td><code>ethtool</code></td></tr>
+<tr><td>Packet capture</td><td><code>tcpdump</code></td></tr>
+<tr><td>Route tracing</td><td><code>traceroute</code></td></tr>
+<tr><td>Remote shell/copy</td><td><code>ssh</code>, <code>scp</code></td></tr>
+<tr><td>TCP/UDP connectivity testing</td><td><code>nc</code></td></tr>
+</table>
+<div class="box info"><b>Modern Linux note:</b> this image intentionally relies on <code>ip</code> and <code>ss</code> rather than adding the legacy <code>net-tools</code> package just for <code>ifconfig</code>, <code>route</code>, or <code>netstat</code>.</div>
+
+<h3>The KIWI package manifest</h3>
+<p>KIWI emits a <code>*.packages</code> file containing the package set actually present in the image. Both the ordinary CI build and tagged release workflow now preserve that file alongside the ISO.</p>
+<pre><code>CentOS-Stream-Image.x86_64-10.iso
+CentOS-Stream-Image.x86_64-10.packages
+SHA256SUMS
+UPSTREAM_COMMIT.txt</code></pre>
+<p>This is much stronger than guessing from the upstream profile: for any particular build, the manifest is the authoritative answer to “what packages are inside this ISO?”</p>
+</section>
+
 <section id="dvd">
 <h2>8. Burn an ISO to DVD</h2>
 <p>The Live image now includes <code>xorriso</code>, so it can write an existing ISO to a CD/DVD/BD writer.</p>
@@ -240,6 +285,36 @@ xorriso
 <p>KIWI installs it directly into the Live root filesystem during image construction.</p>
 </section>
 
+<section>
+<h2>Kernel-module build support</h2>
+<p>The Live image also installs <code>kernel-devel</code>. This matters when a hardware/vendor installer needs to compile a kernel module locally rather than shipping a module that already matches the running kernel.</p>
+<div class="arch">running kernel
+      │
+      │ uname -r
+      ▼
+6.12.x-...el10.x86_64
+      │
+      ▼
+/lib/modules/&lt;same-version&gt;/build
+      │
+      ▼
+kernel-devel files
+      │
+      ▼
+vendor/module source ──► make ──► .ko kernel module</div>
+<div class="box info"><b>Related package:</b> CentOS Stream 10 also publishes <code>kernel-devel-matched</code>, whose purpose is to pull matching <code>kernel-core</code> and <code>kernel-devel</code> versions together. The project currently adds the explicitly requested <code>kernel-devel</code> package.</div>
+</section>
+
+<section>
+<h2>Legacy vendor-installer compatibility</h2>
+<p>The image also includes <code>chkconfig</code>. Modern CentOS uses <b>systemd</b>, so normal service management should use:</p>
+<pre><code>systemctl enable SERVICE
+systemctl start SERVICE
+systemctl status SERVICE</code></pre>
+<p>Some older vendor installers still execute commands such as <code>chkconfig --add ...</code> to register a service. If <code>chkconfig</code> is missing, the installer may abort or leave the service setup incomplete.</p>
+<div class="box warn"><b>Important:</b> installing <code>chkconfig</code> only helps when the installer actually depends on it. If the machine hangs during reboot because of a bad kernel module, shutdown hook, storage/network driver, or another kernel-level problem, <code>chkconfig</code> will not fix that underlying issue.</div>
+</section>
+
 <section id="security">
 <h2>9. Security, trust, and reproducibility</h2>
 <h3>Checksums</h3>
@@ -260,6 +335,8 @@ sha256sum -c SHA256SUMS</code></pre>
 <details><summary>DNF / YUM</summary><p>The package-management layer that resolves dependencies and downloads RPMs from configured repositories.</p></details>
 <details><summary>EPEL</summary><p>Extra Packages for Enterprise Linux, a repository providing additional software not shipped in the main enterprise-Linux repositories.</p></details>
 <details><summary>CRB</summary><p>A repository containing many development-oriented dependencies used for software building and some EPEL packages.</p></details>
+<details><summary>chkconfig</summary><p>A legacy SysV-service compatibility utility. CentOS Stream 10 normally uses systemd and <code>systemctl</code>, but some vendor or driver installers still call <code>chkconfig</code> while registering startup services. Having it installed can prevent those legacy installers from failing, but it is not itself a reboot command or a general fix for reboot hangs.</p></details>
+<details><summary>kernel-devel</summary><p>The CentOS package containing kernel headers, Makefiles, generated configuration, and other files needed to compile external kernel modules for a particular kernel version. Vendor driver installers commonly look for a path such as <code>/lib/modules/$(uname -r)/build</code>, which is supplied by the matching <code>kernel-devel</code> package.</p></details>
 <details><summary><code>/dev/sr0</code></summary><p>A common Linux device node for the first optical CD/DVD/BD drive. The exact number can vary.</p></details>
 <details><summary>xorriso</summary><p>A command-line tool for creating, inspecting, manipulating, and writing ISO 9660 optical-disc images.</p></details>
 <details><summary>Bind mount</summary><p>A way to expose a host directory/file at a path inside a container, such as mapping the upstream recipe to <code>/kiwi</code> and build outputs to <code>/out</code>.</p></details>
