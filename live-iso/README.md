@@ -124,3 +124,38 @@ What the important arguments mean:
 **Check the device name carefully before writing.** `/dev/sr0` is common but is not guaranteed on every machine.
 
 The ISO file itself can live on another USB stick, SSD, local partition, or network-mounted filesystem. Keeping large ISO files outside the Live system's RAM-backed writable overlay is usually preferable.
+
+
+## Releases
+
+A dedicated workflow at `.github/workflows/release-live-iso.yml` creates GitHub Releases from version tags beginning with `v`.
+
+Examples:
+
+```bash
+git tag v0.0.1
+git push origin v0.0.1
+```
+
+or a prerelease:
+
+```bash
+git tag v0.0.1-beta
+git push origin v0.0.1-beta
+```
+
+The workflow:
+
+1. checks out the exact tagged commit;
+2. builds the Live ISO;
+3. renames it to include the tag, for example:
+   `centos-stream-10-rpm-builder-live-v0.0.1-x86_64.iso`;
+4. regenerates `SHA256SUMS`;
+5. creates `BUILD_INFO.txt` containing the release tag, repository commit, architecture, and upstream CentOS KIWI commit;
+6. creates a GitHub Release with generated release notes;
+7. marks tags containing a suffix such as `-beta` or `-rc.1` as prereleases;
+8. uploads the ISO, checksum, upstream commit, and build-info file as release assets.
+
+The tag pattern is intentionally broad (`v*`), so values such as `v0.0.1`, `v1.2.3-beta`, and `v2.0.0-rc.1` will all trigger the release workflow.
+
+If a release already exists for the tag and the workflow is rerun, the workflow replaces the assets instead of trying to create a duplicate release.
