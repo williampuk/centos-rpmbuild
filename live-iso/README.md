@@ -22,6 +22,7 @@ The package list lives in `packages.txt`:
 - `git`
 - `tar`
 - `which`
+- `xorriso` — burn ISO images to CD/DVD/BD media
 
 The CentOS AltImages recipe includes EPEL repository configuration, which is needed for packages such as `rpmlint`.
 
@@ -86,3 +87,40 @@ kiwi-ng \
 ```
 
 This approach uses KIWI's public command-line package override mechanism instead of depending on CentOS's internal XML layout.
+
+
+## Burn an ISO to DVD
+
+The Live image includes `xorriso`, so after booting it on a machine with a writable optical drive you can burn an existing ISO directly to DVD.
+
+First identify the optical drive:
+
+```bash
+lsblk
+xorriso -devices
+```
+
+On a typical Linux system the drive is `/dev/sr0`.
+
+Then burn the ISO:
+
+```bash
+sudo xorriso -as cdrecord \
+  -v \
+  dev=/dev/sr0 \
+  blank=as_needed \
+  -eject \
+  /path/to/image.iso
+```
+
+What the important arguments mean:
+
+- `-as cdrecord`: use xorriso's cdrecord-compatible command syntax.
+- `dev=/dev/sr0`: select the optical writer.
+- `blank=as_needed`: blank rewritable media when necessary; on blank write-once media no blanking is performed.
+- `-v`: show verbose progress.
+- `-eject`: eject the disc when writing finishes.
+
+**Check the device name carefully before writing.** `/dev/sr0` is common but is not guaranteed on every machine.
+
+The ISO file itself can live on another USB stick, SSD, local partition, or network-mounted filesystem. Keeping large ISO files outside the Live system's RAM-backed writable overlay is usually preferable.
