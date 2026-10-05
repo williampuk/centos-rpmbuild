@@ -24,6 +24,7 @@ The package list lives in `packages.txt`:
 - `which`
 - `xorriso` — burn ISO images to CD/DVD/BD media
 - `kernel-devel` — headers and build files for compiling external kernel modules against the CentOS Stream kernel
+- `chkconfig` — compatibility utility for legacy SysV-style service setup used by some vendor/driver installers
 
 Networking is also made explicit in `packages.txt` so the Live environment does not depend on whatever the upstream `MIN-Live` profile happens to include:
 
@@ -37,6 +38,14 @@ Networking is also made explicit in `packages.txt` so the Live environment does 
 - `nmap-ncat`
 
 The CentOS AltImages recipe includes EPEL repository configuration, which is needed for packages such as `rpmlint`.
+
+### Why `chkconfig` is included
+
+CentOS Stream 10 uses **systemd** for normal service management, so modern service administration should use commands such as `systemctl enable`, `systemctl start`, and `systemctl status`.
+
+However, some older or vendor-supplied driver installers still invoke `chkconfig` while installing their background service or startup scripts. If that command is missing, the installer may fail part-way through setup or leave the service incompletely registered.
+
+Installing `chkconfig` can therefore fix **that specific compatibility problem**, but it does not itself implement rebooting and should not be considered a general fix for a machine that hangs during reboot after a kernel-module build.
 
 ### Kernel module development
 
