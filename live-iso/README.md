@@ -1,10 +1,10 @@
-# CentOS Stream 10 RPM-builder Live ISO
+# CentOS Stream 9 RPM-builder Live ISO
 
-This directory builds a **CentOS Stream 10 `MIN-Live` ISO** with the RPM build toolchain used by this repository preinstalled.
+This directory builds a **CentOS Stream 9 `MIN-Live` ISO** with the RPM build toolchain used by this repository preinstalled.
 
 For a beginner-friendly explanation of the complete build mechanism, architecture, debugging journey, and lessons learned, open [`build-guide.html`](./build-guide.html).
 
-The image uses the CentOS Alternative Images SIG's official KIWI description for the `c10s` branch and builds the documented `MIN-Live` profile.
+The image uses the CentOS Alternative Images SIG's official KIWI description for the `c9s` branch and builds the documented `MIN-Live` profile.
 
 The upstream KIWI XML is deliberately left untouched. Extra packages are supplied with KIWI's supported `--add-package` command-line option instead. This keeps the build independent of how CentOS organizes or refactors its XML files and components.
 
@@ -41,7 +41,7 @@ The CentOS AltImages recipe includes EPEL repository configuration, which is nee
 
 ### Why `chkconfig` is included
 
-CentOS Stream 10 uses **systemd** for normal service management, so modern service administration should use commands such as `systemctl enable`, `systemctl start`, and `systemctl status`.
+CentOS Stream 9 uses **systemd** for normal service management, so modern service administration should use commands such as `systemctl enable`, `systemctl start`, and `systemctl status`.
 
 However, some older or vendor-supplied driver installers still invoke `chkconfig` while installing their background service or startup scripts. If that command is missing, the installer may fail part-way through setup or leave the service incompletely registered.
 
@@ -51,7 +51,7 @@ Installing `chkconfig` can therefore fix **that specific compatibility problem**
 
 The image also includes `kernel-devel`. This package provides the kernel build files used by software that compiles external kernel modules, including the `/lib/modules/<kernel-version>/build` tree expected by many vendor installers.
 
-CentOS Stream 10 also provides `kernel-devel-matched`, a meta-package that explicitly pulls in matching `kernel-core` and `kernel-devel` versions. This image currently installs `kernel-devel` directly because that is the required package; KIWI resolves it together with the current Stream 10 image package set.
+CentOS Stream 9 also provides `kernel-devel-matched`, a meta-package that explicitly pulls in matching `kernel-core` and `kernel-devel` versions. This image currently installs `kernel-devel` directly because that is the required package; KIWI resolves it together with the current Stream 10 image package set.
 
 ## Networking toolkit
 
@@ -110,13 +110,13 @@ live-iso/out/
 - pull requests that modify this directory or the workflow; and
 - pushes to `main` affecting the ISO build.
 
-The resulting ISO, KIWI `*.packages` manifest, checksum, and upstream commit are uploaded as the `centos-stream-10-rpm-builder-live` workflow artifact.
+The resulting ISO, KIWI `*.packages` manifest, checksum, and upstream commit are uploaded as the `centos-stream-9-rpm-builder-live` workflow artifact.
 
 ## How the build works
 
-1. Clone the CentOS Alternative Images SIG KIWI descriptions and check out `c10s`.
+1. Clone the CentOS Alternative Images SIG KIWI descriptions and check out `c9s`.
 2. Record the exact upstream commit.
-3. Start a privileged CentOS Stream 10 container.
+3. Start a privileged CentOS Stream 9 container.
 4. Install KIWI and its build dependencies in that container.
 5. Read `packages.txt` and turn each line into a KIWI `--add-package=<name>` argument.
 6. Build the official `MIN-Live` profile without modifying the upstream XML.
@@ -199,7 +199,7 @@ The workflow:
 1. checks out the exact tagged commit;
 2. builds the Live ISO;
 3. renames it to include the tag, for example:
-   `centos-stream-10-rpm-builder-live-v0.0.1-x86_64.iso`;
+   `centos-stream-9-rpm-builder-live-v0.0.1-x86_64.iso`;
 4. regenerates `SHA256SUMS`;
 5. creates `BUILD_INFO.txt` containing the release tag, repository commit, architecture, and upstream CentOS KIWI commit;
 6. creates a GitHub Release with generated release notes;
