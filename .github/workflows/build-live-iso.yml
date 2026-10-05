@@ -48,6 +48,7 @@ jobs:
           name: centos-stream-10-rpm-builder-live
           path: |
             live-iso/out/*.iso
+            live-iso/out/*.packages
             live-iso/out/SHA256SUMS
             live-iso/out/UPSTREAM_COMMIT.txt
           if-no-files-found: error
