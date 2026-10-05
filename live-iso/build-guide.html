@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Building a Custom CentOS Stream 10 Live RPM-Builder ISO â€” From Zero to Understanding</title>
+<style>
+:root{
+  --bg:#0b0f14;--panel:#111821;--panel2:#151e29;--text:#e7edf4;--muted:#9caabd;
+  --line:#273444;--accent:#79c0ff;--accent2:#8bdb81;--warn:#f2cc60;--bad:#ff7b72;
+  --code:#090d12;--shadow:0 10px 30px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(180deg,#091018 0%,var(--bg) 300px);color:var(--text);
+  font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,pre,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{padding:64px 24px 36px;border-bottom:1px solid var(--line);
+  background:radial-gradient(900px 320px at 20% -10%,rgba(121,192,255,.15),transparent 60%)}
+.hero{max-width:1150px;margin:auto}
+.eyebrow{color:var(--accent2);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem}
+h1{font-size:clamp(2.1rem,5vw,4.1rem);line-height:1.05;margin:.35rem 0 1rem;max-width:1000px}
+.subtitle{font-size:1.15rem;color:var(--muted);max-width:900px}
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.badge{background:#152333;border:1px solid #28415d;color:#cde7ff;border-radius:999px;padding:6px 11px;font-size:.85rem}
+.layout{display:grid;grid-template-columns:260px minmax(0,850px);gap:38px;max-width:1180px;margin:0 auto;padding:36px 24px 80px}
+nav{position:sticky;top:20px;align-self:start;background:rgba(17,24,33,.8);backdrop-filter:blur(8px);
+  border:1px solid var(--line);border-radius:14px;padding:16px}
+nav b{display:block;margin-bottom:8px}
+nav a{display:block;color:var(--muted);padding:6px 8px;border-radius:7px;font-size:.92rem}
+nav a:hover{color:var(--text);background:#17212c;text-decoration:none}
+main{min-width:0}
+section{margin:0 0 54px}
+h2{font-size:1.75rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:1.25rem;margin-top:32px}
+p,li{color:#d3dbe5}
+.small{font-size:.9rem;color:var(--muted)}
+.callout{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px 18px;margin:18px 0}
+.callout.good{border-left:4px solid var(--accent2)}
+.callout.warn{border-left:4px solid var(--warn)}
+.callout.bad{border-left:4px solid var(--bad)}
+.callout.info{border-left:4px solid var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.card h3{margin-top:0}
+pre{position:relative;overflow:auto;background:var(--code);border:1px solid #202b38;border-radius:12px;padding:16px 18px;color:#dce8f5}
+pre .copy{position:absolute;right:10px;top:10px}
+button{background:#172536;border:1px solid #304762;color:#d8e8f7;border-radius:8px;padding:6px 10px;cursor:pointer}
+button:hover{background:#20334a}
+.inline-code{background:#131c26;border:1px solid #243242;border-radius:5px;padding:.1em .35em}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin:20px 0;overflow:auto}
+.diagram svg{min-width:760px;width:100%;height:auto;display:block}
+.flow-step{display:grid;grid-template-columns:48px 1fr;gap:14px;margin:15px 0}
+.num{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#17314a;border:1px solid #2c5981;color:#bfe2ff;font-weight:700}
+.timeline{border-left:2px solid #2a394a;margin-left:10px;padding-left:25px}
+.event{position:relative;margin:22px 0}
+.event:before{content:"";position:absolute;left:-32px;top:7px;width:12px;height:12px;background:var(--panel2);border:2px solid var(--accent);border-radius:50%}
+.event.fail:before{border-color:var(--bad)}
+.event.win:before{border-color:var(--accent2)}
+.event h3{margin:.2rem 0}
+table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:12px;background:var(--panel)}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:#bcd7ef;background:#14202c}
+tr:last-child td{border-bottom:0}
+details{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:12px 14px}
+summary{cursor:pointer;font-weight:650}
+.term{color:var(--accent2);font-weight:700}
+.kv{display:grid;grid-template-columns:180px 1fr;gap:8px 15px}
+.kv div:nth-child(odd){color:#a9bdd0;font-weight:600}
+.arch{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto;background:var(--code);border:1px solid var(--line);border-radius:12px;padding:18px;color:#dce8f5}
+hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+footer{border-top:1px solid var(--line);padding:30px 24px 60px;color:var(--muted);text-align:center}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.layout nav{position:relative;top:0}.grid2{grid-template-columns:1fr}.kv{grid-template-columns:1fr}.kv div:nth-child(odd){margin-top:8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hero">
+    <div class="eyebrow">Linux image building Â· CentOS Stream 10 Â· GitHub Actions Â· KIWI NG</div>
+    <h1>How our custom RPM-builder Live ISO actually works</h1>
+    <p class="subtitle">A beginner-friendly walk-through of the final design, the build pipeline, every important failure we hit, and the Linux concepts hiding underneath those failures.</p>
+    <div class="badges">
+      <span class="badge">CentOS Stream 10</span>
+      <span class="badge">MIN-Live</span>
+      <span class="badge">KIWI NG</span>
+      <span class="badge">Docker</span>
+      <span class="badge">GitHub Actions</span>
+      <span class="badge">RPM toolchain</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<nav>
+  <b>Guide map</b>
+  <a href="#goal">1. What we wanted</a>
+  <a href="#concepts">2. Core concepts</a>
+  <a href="#architecture">3. Final architecture</a>
+  <a href="#pipeline">4. Build pipeline</a>
+  <a href="#script">5. build.sh explained</a>
+  <a href="#actions">6. GitHub Actions</a>
+  <a href="#kiwi">7. KIWI under the hood</a>
+  <a href="#failures">8. Trial & error timeline</a>
+  <a href="#lessons">9. Lessons learned</a>
+  <a href="#security">10. Security & reproducibility</a>
+  <a href="#newbie">11. Linux newbie glossary</a>
+  <a href="#next">12. Useful next steps</a>
+  <a href="#sources">References</a>
+</nav>
+
+<main>
+<section id="goal">
+<h2>1. What we wanted to build</h2>
+<p>The goal was not merely â€œinstall a few packages.â€ We wanted a <span class="term">bootable Live ISO</span> of CentOS Stream 10 that already contains a complete basic RPM-building environment:</p>
+<pre><code>rpm-build
+rpmdevtools
+redhat-rpm-config
+yum-utils
+rpmlint
+gcc
+make
+git
+tar
+which</code></pre>
+
+<p>The result should be buildable automatically in GitHub Actions, so the repository itself becomes the recipe for producing the ISO.</p>
+
+<div class="callout good"><b>End result:</b> a GitHub Actions run produces a bootable <code>.iso</code>, a <code>SHA256SUMS</code> file, and <code>UPSTREAM_COMMIT.txt</code> recording exactly which CentOS image-description revision was used.</div>
+</section>
+
+<section id="concepts">
+<h2>2. The core concepts first</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h3>What is a Live ISO?</h3>
+    <p>An ISO is a filesystem image traditionally associated with optical discs. A <b>Live ISO</b> contains enough of an operating system to boot and run directly from the media without first installing it onto the machine's main disk.</p>
+  </div>
+  <div class="card">
+    <h3>What is KIWI?</h3>
+    <p>KIWI NG is an <b>operating-system image builder</b>. You give it an image description plus package repositories; it creates a Linux filesystem tree and then packages that tree into an output format such as an ISO.</p>
+  </div>
+  <div class="card">
+    <h3>What is the build container?</h3>
+    <p>The CentOS Stream 10 Docker container is only the <b>factory</b> in which KIWI runs. It is <em>not</em> the final Live OS. The final Live OS is independently assembled by KIWI from CentOS repositories and the CentOS image description.</p>
+  </div>
+  <div class="card">
+    <h3>Why GitHub Actions?</h3>
+    <p>GitHub gives us an ephemeral Linux machine called a <b>runner</b>. Every run starts clean, checks out our repository, builds the image, and uploads the output as an artifact.</p>
+  </div>
+</div>
+
+<div class="callout info">
+<b>A useful mental model</b><br>
+GitHub runner = rented workshop<br>
+CentOS container = controlled workbench<br>
+KIWI = image-building machine<br>
+CentOS KIWI description = blueprint<br>
+RPM repositories = parts warehouse<br>
+<code>packages.txt</code> = our extra parts list<br>
+ISO = finished product
+</div>
+</section>
+
+<section id="architecture">
+<h2>3. Final architecture</h2>
+
+<div class="diagram">
+<svg viewBox="0 0 1050 590" role="img" aria-label="Architecture diagram">
+<defs>
+ <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#79c0ff"/></marker>
+</defs>
+<style>
+.box{fill:#121b25;stroke:#34485e;stroke-width:2}.green{stroke:#5fab68}.blue{stroke:#4f90c6}.yellow{stroke:#c7a449}
+.t{fill:#e7edf4;font:600 18px system-ui}.s{fill:#9caabd;font:14px system-ui}.a{stroke:#79c0ff;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+</style>
+<rect class="box blue" x="30" y="35" rx="14" width="990" height="115"/>
+<text class="t" x="55" y="68">GitHub Actions runner â€” Ubuntu 24.04</text>
+<text class="s" x="55" y="96">Ephemeral VM: repository checkout, Docker engine, temporary disk space</text>
+<text class="s" x="55" y="121">Workflow calls: bash ./live-iso/build.sh</text>
+
+<rect class="box" x="55" y="195" rx="14" width="270" height="120"/>
+<text class="t" x="78" y="228">Our repository</text>
+<text class="s" x="78" y="257">packages.txt</text>
+<text class="s" x="78" y="280">build.sh</text>
+<text class="s" x="78" y="303">GitHub workflow</text>
+
+<rect class="box yellow" x="390" y="195" rx="14" width="270" height="120"/>
+<text class="t" x="413" y="228">CentOS AltImages repo</text>
+<text class="s" x="413" y="257">c10s branch</text>
+<text class="s" x="413" y="280">MIN-Live profile</text>
+<text class="s" x="413" y="303">Official KIWI description</text>
+
+<rect class="box green" x="725" y="195" rx="14" width="270" height="120"/>
+<text class="t" x="748" y="228">CentOS build container</text>
+<text class="s" x="748" y="257">quay.io/centos/centos:stream10</text>
+<text class="s" x="748" y="280">KIWI + policycoreutils</text>
+<text class="s" x="748" y="303">privileged + /dev mounted</text>
+
+<rect class="box blue" x="245" y="385" rx="14" width="560" height="130"/>
+<text class="t" x="270" y="420">KIWI system build</text>
+<text class="s" x="270" y="450">1. Prepare root filesystem tree from CentOS description + repositories</text>
+<text class="s" x="270" y="476">2. Add our packages via --add-package=...</text>
+<text class="s" x="270" y="502">3. Create bootable ISO from the prepared system tree</text>
+
+<path class="a" d="M190 315 C190 350 300 350 360 385"/>
+<path class="a" d="M525 315 L525 380"/>
+<path class="a" d="M860 315 C860 350 750 350 690 385"/>
+<path class="a" d="M805 450 C900 450 915 450 990 450"/>
+<text class="s" x="820" y="436">outputs</text>
+<text class="s" x="833" y="468">*.iso</text>
+<text class="s" x="833" y="490">SHA256SUMS</text>
+<text class="s" x="833" y="512">UPSTREAM_COMMIT.txt</text>
+</svg>
+</div>
+
+<div class="callout warn"><b>Very important distinction:</b> Docker is not being used to â€œturn a container into an ISO.â€ Docker only gives KIWI a predictable CentOS Stream 10 environment in which to do its work.</div>
+</section>
+
+<section id="pipeline">
+<h2>4. The build pipeline, step by step</h2>
+
+<div class="flow-step"><div class="num">1</div><div><b>GitHub allocates an Ubuntu runner.</b><br><span class="small">This is a temporary VM. Nothing from a previous run should be assumed to exist.</span></div></div>
+<div class="flow-step"><div class="num">2</div><div><b>The repository is checked out.</b><br><span class="small">Our workflow gets <code>live-iso/build.sh</code>, <code>packages.txt</code>, and the rest of the project.</span></div></div>
+<div class="flow-step"><div class="num">3</div><div><b>Some preinstalled runner software is deleted.</b><br><span class="small">Android, GHC, and .NET directories are removed to free tens of GB for image building.</span></div></div>
+<div class="flow-step"><div class="num">4</div><div><b><code>build.sh</code> clones the CentOS Alternative Images recipe.</b><br><span class="small">It checks out the <code>c10s</code> branch and records its exact Git commit SHA.</span></div></div>
+<div class="flow-step"><div class="num">5</div><div><b>A privileged CentOS Stream 10 container starts.</b><br><span class="small">The upstream recipe directory, output directory, package list, and host <code>/dev</code> are mounted into it.</span></div></div>
+<div class="flow-step"><div class="num">6</div><div><b>KIWI is installed inside the container.</b><br><span class="small">The container is disposable, so installing build dependencies inside it keeps the GitHub host cleaner.</span></div></div>
+<div class="flow-step"><div class="num">7</div><div><b>The package list becomes KIWI CLI arguments.</b><br><span class="small"><code>rpm-build</code> becomes <code>--add-package=rpm-build</code>, etc.</span></div></div>
+<div class="flow-step"><div class="num">8</div><div><b>KIWI builds <code>MIN-Live</code>.</b><br><span class="small">KIWI resolves packages, constructs the future root filesystem, adds the boot infrastructure, then creates the final ISO.</span></div></div>
+<div class="flow-step"><div class="num">9</div><div><b>The ISO is checksummed and uploaded.</b><br><span class="small">GitHub Actions exposes the result as a downloadable workflow artifact.</span></div></div>
+</section>
+
+<section id="script">
+<h2>5. What <code>build.sh</code> is really doing</h2>
+
+<h3>Fail fast</h3>
+<pre><code>set -euo pipefail</code></pre>
+<table>
+<tr><th>Flag</th><th>Meaning</th></tr>
+<tr><td><code>-e</code></td><td>Exit when a command fails instead of blindly continuing.</td></tr>
+<tr><td><code>-u</code></td><td>Treat an unset variable as an error.</td></tr>
+<tr><td><code>pipefail</code></td><td>If one command in a pipeline fails, the pipeline is considered failed.</td></tr>
+</table>
+
+<h3>Default values that can still be overridden</h3>
+<pre><code>UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-c10s}"
+KIWI_PROFILE="${KIWI_PROFILE:-MIN-Live}"</code></pre>
+<p>The <code>${VAR:-default}</code> shell syntax means: â€œuse the environment variable if one was supplied; otherwise use this default.â€ This makes the script configurable without editing it.</p>
+
+<h3>Why record the upstream commit?</h3>
+<pre><code>git -C "${UPSTREAM_DIR}" rev-parse HEAD \
+  &gt; "${OUT_DIR}/UPSTREAM_COMMIT.txt"</code></pre>
+<p>We intentionally track a moving branch (<code>c10s</code>). That means two builds performed months apart might use different CentOS image descriptions. Recording the Git commit gives us a trace of what â€œupstreamâ€ actually meant for a particular build.</p>
+
+<h3>The most important Docker command</h3>
+<pre><code>docker run --rm --privileged \
+  -v /dev:/dev \
+  -v "${UPSTREAM_DIR}:/kiwi:rw" \
+  -v "${OUT_DIR}:/out:rw" \
+  -v "${SCRIPT_DIR}/packages.txt:/packages.txt:ro" \
+  -e "KIWI_PROFILE=${KIWI_PROFILE}" \
+  quay.io/centos/centos:stream10 \
+  bash ...</code></pre>
+
+<div class="kv">
+<div><code>--rm</code></div><div>Delete the temporary container when it exits.</div>
+<div><code>--privileged</code></div><div>Give the container broad device/kernel capabilities needed by low-level image-building operations.</div>
+<div><code>-v /dev:/dev</code></div><div>Expose host device nodes to the build container. Image construction may need loop/device-mapper style operations.</div>
+<div><code>:rw</code></div><div>Read-write bind mount.</div>
+<div><code>:ro</code></div><div>Read-only bind mount; ideal for our package-list input.</div>
+<div><code>-e</code></div><div>Pass an environment variable into the container.</div>
+</div>
+
+<h3>Turning a text file into KIWI arguments</h3>
+<pre><code>mapfile -t packages &lt; &lt;(
+  grep -Ev "^[[:space:]]*(#|$)" /packages.txt
+)
+
+package_args=()
+for package in "${packages[@]}"; do
+  package_args+=(--add-package="${package}")
+done</code></pre>
+
+<p>This is a nice shell pattern. Blank lines and comments are filtered out, then every real line becomes one array element. We deliberately use a Bash array rather than constructing a giant command string, because arrays preserve argument boundaries correctly.</p>
+
+<div class="callout good"><b>Why the final approach is robust:</b> we customize through KIWI's documented public CLI instead of reaching into CentOS's internal XML layout. That is an API-boundary lesson: prefer supported interfaces over editing implementation details.</div>
+</section>
+
+<section id="actions">
+<h2>6. The GitHub Actions workflow explained</h2>
+
+<pre><code>jobs:
+  build-live-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120</code></pre>
+<p>A <b>job</b> is one unit of work running on one runner. Here the runner is Ubuntu 24.04 and GitHub will stop it after two hours.</p>
+
+<h3>Why free disk space?</h3>
+<p>Image creation temporarily needs much more storage than the finished ISO. KIWI first constructs an entire filesystem tree, maintains caches and package downloads, and then emits the compressed image.</p>
+<pre><code>sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+df -h</code></pre>
+
+<div class="callout info">On the successful direction of our experiments, freeing runner disk space was not cosmetic. OS-image builds are fundamentally disk-heavy workloads.</div>
+
+<h3>Why invoke the script with <code>bash</code>?</h3>
+<pre><code>run: bash ./live-iso/build.sh</code></pre>
+<p>This does not require the file to have Unix executable permission. It explicitly asks Bash to read and run the file.</p>
+
+<h3>Uploading the finished product</h3>
+<pre><code>uses: actions/upload-artifact@v4
+with:
+  name: centos-stream-10-rpm-builder-live
+  path: |
+    live-iso/out/*.iso
+    live-iso/out/SHA256SUMS
+    live-iso/out/UPSTREAM_COMMIT.txt</code></pre>
+<p>A GitHub Actions <b>artifact</b> is simply a file bundle preserved after the ephemeral runner disappears.</p>
+</section>
+
+<section id="kiwi">
+<h2>7. KIWI under the hood</h2>
+
+<p>KIWI conceptually has two major phases:</p>
+<div class="arch">image description + repositories
+              â”‚
+              â–¼
+      â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+      â”‚ PREPARE         â”‚
+      â”‚                 â”‚
+      â”‚ build a root    â”‚
+      â”‚ filesystem tree â”‚
+      â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+               â”‚
+               â–¼
+      /future-linux-root/
+      â”œâ”€â”€ etc/
+      â”œâ”€â”€ usr/
+      â”œâ”€â”€ var/
+      â”œâ”€â”€ boot/
+      â””â”€â”€ ...
+               â”‚
+               â–¼
+      â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+      â”‚ CREATE          â”‚
+      â”‚                 â”‚
+      â”‚ package the     â”‚
+      â”‚ tree as an ISO  â”‚
+      â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+               â”‚
+               â–¼
+          bootable.iso</div>
+
+<p><code>kiwi-ng system build</code> is a convenience command that performs both phases in one operation.</p>
+
+<h3>Where our extra RPM packages fit</h3>
+<p>The <code>--add-package</code> option says: â€œtake the official description and additionally install this package into the image.â€ It can be specified repeatedly. This is exactly what we want because our desired difference from the official MIN Live image is primarily <b>package selection</b>.</p>
+
+<h3>Why EPEL and CRB show up</h3>
+<p>CentOS BaseOS/AppStream do not necessarily contain every development utility. EPEL (Extra Packages for Enterprise Linux) provides additional packages, while CRB contains development-oriented dependencies needed by some packages. The build container enables them so KIWI and the image recipe can resolve required software.</p>
+</section>
+
+<section id="failures">
+<h2>8. The trial-and-error timeline â€” and what each failure taught us</h2>
+
+<div class="timeline">
+
+<div class="event fail">
+<h3>Failure 1 â€” <code>Permission denied</code></h3>
+<pre><code>./live-iso/build.sh: Permission denied
+exit code 126</code></pre>
+<p><b>Cause:</b> the script did not have the executable Git mode bit.</p>
+<p><b>Fix:</b> run it as <code>bash ./live-iso/build.sh</code>.</p>
+<p><b>Lesson:</b> a shell script is just a text file. The shebang does not magically make it executable; Unix permissions still matter. Explicitly invoking the interpreter bypasses that requirement.</p>
+</div>
+
+<div class="event fail">
+<h3>Failure 2 â€” â€œNo MIN-Live profileâ€ from the first upstream source</h3>
+<p><b>Cause:</b> we initially used a GitLab migration target that did not contain the complete live-image recipe content we expected.</p>
+<p><b>Fix:</b> follow the CentOS Alternative Images documentation and clone the Pagure repository.</p>
+<p><b>Lesson:</b> â€œofficial-looking repositoryâ€ is not the same thing as â€œcurrently authoritative build input.â€ When upstream projects migrate hosting, documentation and repository state can temporarily diverge.</p>
+</div>
+
+<div class="event fail">
+<h3>Failure 3 â€” shallow clone rejected</h3>
+<pre><code>fatal: dumb http transport does not support shallow capabilities</code></pre>
+<p><b>Cause:</b> Pagure's Git endpoint did not support the protocol features required by <code>--depth 1</code>.</p>
+<p><b>Fix:</b> perform a normal branch clone without shallow history.</p>
+<p><b>Lesson:</b> Git is a protocol ecosystem, not just the <code>git</code> command. Different servers/transports support different capabilities.</p>
+</div>
+
+<div class="event fail">
+<h3>Failure 4 â€” our profile parser found no profiles</h3>
+<p><b>Cause:</b> we assumed profiles had to appear in the root <code>config.xml</code> in a particular XML shape.</p>
+<p><b>Fix:</b> stop trying to reverse-engineer the current internal XML representation.</p>
+<p><b>Lesson:</b> whenever a project exposes a documented CLI/API, use it instead of building logic around its private file organization.</p>
+</div>
+
+<div class="event fail">
+<h3>Failure 5 â€” <code>Could not find &lt;/image&gt;</code></h3>
+<p><b>Cause:</b> the current CentOS image recipe is componentized; our script assumed a classic monolithic XML document and tried to inject XML text before a closing <code>&lt;/image&gt;</code> tag.</p>
+<p><b>Fix:</b> remove XML rewriting completely.</p>
+<p><b>Lesson:</b> text surgery on structured configuration is fragile. Even using an XML parser would still unnecessarily couple us to the description's internal structure.</p>
+</div>
+
+<div class="event win">
+<h3>Final design â€” use KIWI's own override interface</h3>
+<pre><code>--add-package=rpm-build
+--add-package=rpmdevtools
+...</code></pre>
+<p><b>Why it is better:</b> it expresses exactly what we mean â€” â€œbuild the official profile, plus these packagesâ€ â€” without mutating upstream configuration.</p>
+</div>
+
+</div>
+</section>
+
+<section id="lessons">
+<h2>9. The deeper engineering lessons</h2>
+
+<h3>Lesson A â€” Start by reproducing upstream before customizing</h3>
+<p>The CentOS documentation explicitly recommends building a standard image first. That separates â€œmy environment cannot build CentOS imagesâ€ from â€œmy customization broke the image.â€ ThhÈ\ÈHİÙ\™[XYÙÚ[™ÈXÚš\]YHÙ[™^[Û™[^[XYÚ[™ËÜ‚‚Ï“\ÜÛÛˆˆ8 %\[™ÛˆX›XÈ[\™˜XÙ\Ë›İš[H^[İ]ÏÚÏ‚X›O‚œš]Oİ”›Ø\İİİ‚”ÙX\˜Ú›ÜˆSYÜÈ[™[œÙ\Ûš\]È]ÜXÚYšXÈØØ][ÛœÏİØ[ÛÙOšÚ]ÚK[™ÈKXY\XÚØYÙOK‹‹ØÛÙOİİ‚\Üİ[YH\İ™X[IÜÈ™\ÜÚ]ÜHÜ™Ø[š^˜][Ûİ•\ÙHHØİ[Y[Y\ØÜš\[Ûˆ\™XİÜH[™›Ùš[Oİİ‚”\œÙH[\›˜[™\™\Ù[][ÛœÈ[›™XÙ\ÜØ\š[Oİ\ÚÈHİÛš[™ÈÛÛÈ[\œ™]]ÈİÛˆ™\™\Ù[][Ûİİ‚İX›O‚‚Ï“\ÜÛÛˆÈ8 %ÛÛZ[™\š^˜][Ûˆ\È\ÛÛ][Û‹›İXYÚXÏÚÏ‚•HÛÛZ[™\ˆ[ÈXZÙHHÛÛÚZ[ˆ™YXİX›K]\ÈÛÜšÛØYİ[™YYÈš]š[YÙYXØÙ\ÜÈÈÙ\›™[Ù]šXÙH[˜İ[Û˜[]KˆHÛÛZ[™\ˆÚ\™\ÈHÜİÙ\›™[È]\È›İHš\X[XXÚ[™KÜ‚‚Ï“\ÜÛÛˆ8 %ÒHXXÚ[™\È\™H\ÜÜØX›OÚÏ‚‘]™\H[\Ü[İ]]]\İX]™HH[›™\ˆ™Y›Ü™H]\Ø\X\œËˆ]\ÈÚHHTÓËÚXÚÜİ[K[™\İ™X[H™]š\Ú[Ûˆ\™H^XÚ]H\ØYY\È\Y˜XİËÜ‚‚Ï“\ÜÛÛˆH8 %™\›ÙXÚXš[]H\È]™[ÏÚÏ‚”™XÛÜ™[™ÈÛÙO•TÕ‘PSWĞÓÓSRUØÛÙOˆ[\›İ™\È˜XÙXXš[]K]\ÈZ[\È›İ™XÙ\ÜØ\š[Hš]Y›Ü‹Xš]™\›ÙXÚX›Nˆ”H™\ÜÚ]ÜšY\È\™H[İš[™Ë[Y\İ[\ÈX^H[\ˆH[XYÙK[™HÛÛZ[™\ˆYÈ]Ù[ˆØ[ˆÚ[™ÙHİ™\ˆ[YKÜ‚‚]ˆÛ\ÜÏH˜Ø[İ]Ø\›ˆ‚¸ '™\X]X›x 'H\È›İ]]ÛX]XØ[H8 '™\›ÙXÚX›K¸ 'OØœ‚”™\X]X›NˆHÛÜšÙ›İÈØ[ˆZ[H[XYÙHYØZ[‹œ‚•˜XÙXX›NˆÙHÛ›İÈÚXÚ\İ™X[H\ØÜš\[ÛˆÛÛ[Z]Ø\È\ÙYœ‚”™\›ÙXÚX›NˆY[XØ[[œ]È›ÙXÙH]KZY[XØ[İ]]8 %H]XÚİ›Û™Ù\ˆ›Ü\K‚Ù]‚ÜÙXİ[Û‚‚ÙXİ[ÛˆYHœÙXİ\š]H‚ŒLˆÙXİ\š]K\İ[™™\›ÙXÚXš[]OÚ‚‚Ï•ÚHÛÙO‹K\š]š[YÙYØÛÙOˆ\Ù\™\È™\ÜXİÚÏ‚Hš]š[YÙYÛÛZ[™\ˆ\È˜\ˆ™]Ù\ˆ\ÛÛ][Ûˆ›İ[™\šY\Èœ›ÛHHÜİˆ[ˆHÚ]X‹ZÜİY\[Y\˜[[›™\ˆ\È\È]XÚ\ÜÈœšYÚ[š[™È[ˆÚ[™ÈHØ[YH[™ÈÛˆHÛ™Ë[]™Y›ÙXİ[ÛˆÙ\™\‹]Hš[˜Ú\Hİ[X]\œÎˆÛ›H[ˆ\İYZ[ÛÙH[ˆİXÚHÛÛZ[™\‹Ü‚‚Ï•Ú]Ù\ÈÛÙO”ÒLM”ÕSTÏØÛÙOˆÏÏÚÏ‚™OÛÙOœÚLMœİ[HKH
+‹š\ÛÈ	™İÈÒLM”ÕSTÏØÛÙOÜ™O‚•\ÈÛÛ\]\ÈHÜ\ÙÜ˜\XÈYÙ\İÙˆHš[š\ÚYTÓËˆ]\Ü‚™OÛÙOœÚLMœİ[HXÈÒLM”ÕSTÏØÛÙOÜ™O‚˜Ø[ˆ]XİXØÚY[[ÛÜœ\[ÛˆÜˆ[ÙYšXØ][ÛˆÙˆHš[KˆHÚXÚÜİ[HH]Ù[ˆÙ\È››İØˆ\İX›\ÚÚÈÜ™X]YHš[NÈ›Üˆ]][XÚ]H[İHÛİ[Y][Û˜[HÚYÛˆHÚXÚÜİ[HÜˆ\Y˜XİÜ‚‚Ï‘›Üˆİ›Û™Ù\ˆ™\›ÙXÚXš[]H]\ÚÏ‚[‚O”[ˆHÙ[ÔÈ[XYÙKY\ØÜš\[ÛˆÛÛ[Z]˜]\ˆ[ˆ[Ø^\È›ÛİÚ[™ÈÛÙO˜ÌLÏØÛÙO‹ÛO‚O”[ˆHÛÛZ[™\ˆ[XYÙHHYÙ\İ˜]\ˆ[ˆH[İš[™ÈYËÛO‚O”Û˜\ÚİÜˆ[ˆXÚØYÙH™\ÜÚ]ÜšY\ÈYˆYH\İÜšXØ[™XZ[Xš[]H\È™\]Z\™YÛO‚O”™XÛÜ™ÒUÒH™\œÚ[Û‹XÚØYÙH‘U”\Ë\˜Ú]Xİ\™K[™Z[[Y\İ[\ÛO‚O“Ü[Û˜[HÚYÛˆHTÓËØÚXÚÜİ[HÚ]H\İY™[X\ÙHÙ^KÛO‚İ[‚ÜÙXİ[Û‚‚ÙXİ[ÛˆYH›™]ØšYH‚ŒLKˆ[^[™]ØšYHÛÜÜØ\OÚ‚‚]Z[ÈÜ[İ[[X\O”™\ÜÚ]ÜOÜİ[[X\O‚•\ÈÛÜ™\Èİ™\›ØYYˆH‘Ú]™\ÜÚ]ÜOØˆİÜ™\ÈÛİ\˜ÙKÚ\İÜKˆ[ˆ””HXÚØYÙH™\ÜÚ]ÜOØˆİÜ™\È[œİ[X›HÛÙØ\™H[™Y]Y]Kˆ[ˆ\ÈZ[ÙH\ÙH›İÜ‚Ù]Z[Ï‚‚]Z[Ïİ[[X\O””OÜİ[[X\O‚[ˆ”H\È[ˆ[œİ[X›HÛÙØ\™HXÚØYÙH\ÙYH™YÜ˜KÔ’SĞÙ[ÔËY˜[Z[HŞ\İ[\Ëˆ]ÛÛZ[œÈš[\È\ÈY]Y]NˆXÚØYÙH˜[YK™\œÚ[Û‹\[™[˜ÚY\ËØÜš\ËİÛ™\œÚ\]ËÜ‚Ù]Z[Ï‚‚]Z[Ïİ[[X\O‘‘ˆÈUSOÜİ[[X\O‚‘‘ˆ\ÈH[Ù\›ˆXÚØYÙHX[˜YÙ\ˆ›Üˆ\È˜[Z[HÙˆ\İšX][ÛœËˆ]™\ÛÛ™\È\[™[˜ÚY\È[™İÛ›ØYÈ”\Èœ›ÛHÛÛ™šYİ\™Y™\ÜÚ]ÜšY\ËˆH˜[YHÛÙO][OØÛÙOˆÙ[ˆİ\š]™\È\ÈÛÛ\]Xš[]H\›Z[›ÛÙŞKÜ‚Ù]Z[Ï‚‚]Z[Ïİ[[X\O‘TSÜİ[[X\O‚‘^˜HXÚØYÙ\È›Üˆ[\œš\ÙH[^ˆ]YÈXÚØYÙ\È]\™H\ÙY[Ûˆ[\œš\ÙKS[^Ş\İ[\È]\™H›İÚ\Y[ˆHXZ[ˆ’SĞÙ[ÔÈ™\ÜÚ]ÜšY\ËÜ‚Ù]Z[Ï‚‚]Z[Ïİ[[X\OÔÜİ[[X\O‚ÛÙT™XYHZ[\‹\İ[H™\ÜÚ]ÜHÛÛ[[ˆHSXÛÜŞ\İ[Kˆ]ÛÛZ[œÈX[H]™[ÜY[Xœ˜\šY\È[™\[™[˜ÚY\È\ÙYÚ[ˆZ[[™ÈÛÙØ\™HÜˆ[œİ[[™ÈTSXÚØYÙ\ËÜ‚Ù]Z[Ï‚‚]Z[Ïİ[[X\O”›Ûİš[\Ş\İ[HÈ›Ûİ™YOÜİ[[X\O‚•H]\™H[^Ş\İ[IÜÈ\™XİÜH™YNˆÛÙO‹Ù]ÏØÛÙO‹ÛÙO‹İ\ÜØÛÙO‹ÛÙO‹İ˜\ØÛÙO‹ÛÙO‹Ø›ÛİØÛÙO‹[™ÛÈÛ‹ˆÒUÒHÜ™X]\È\È™YH™Y›Ü™HXÚØYÚ[™È][ÈHš[˜[[XYÙKÜ‚Ù]Z[Ï‚‚]Z[Ïİ[[X\Oš[™[İ[Üİ[[X\O‚HØ^HÈ^ÜÙH[ˆ^\İ[™ÈÜİ\™XİÜKÙš[H]H][œÚYHHÛÛZ[™\‹ˆİ\ˆ\İ™X[H™XÚ\H\X\œÈ]ÛÙO‹ÚÚ]ÚOØÛÙOˆ[œÚYHHÛÛZ[™\‹Ú[HHİ]]\™XİÜH\X\œÈ\ÈÛÙO‹Ûİ]ØÛÙO‹Ü‚Ù]Z[Ï‚‚]Z[Ïİ[[X\O‘Ú]œ˜[˜ÚœÈÛÛ[Z]Üİ[[X\O‚Hœ˜[˜ÚZÙHÛÙO˜ÌLÏØÛÙOˆ\ÈH[İš[™È˜[YHÚ[[™È]HÛÛ[Z]ˆHÛÛ[Z]ÒH\ÈHÜXÚYšXÈ[[]]X›HÛ˜\ÚİˆÙH›ÛİÈHœ˜[˜Ú]™XÛÜ™HÛÛ[Z]Ü‚Ù]Z[Ï‚‚]Z[Ïİ[[X\O\Y˜XİÜİ[[X\O‚’[ˆÒKĞÑ\›Z[›ÛÙŞK[ˆ\Y˜Xİ\ÈHš[H›ÙXÙYHHZ[ˆš[˜\K\˜Ú]™KTÓË™\ÜÚXÚÜİ[K]ËÜ‚Ù]Z[Ï‚ÜÙXİ[Û‚‚ÙXİ[ÛˆYH›™^‚ŒL‹ˆ\ÙY[™^İ\ÏÚ‚‚]ˆÛ\ÜÏH™ÜšYˆ‚]ˆÛ\ÜÏH˜Ø\™‚Ï›Ûİ]\İHTÓÈ]]ÛX]XØ[OÚÏ‚YHÛ[ÚÙH\İ]İ\ÈHTÓÈ[ˆQSUKØZ]È›Üˆ›Ûİ[™˜[Y]\È^XİYXÚØYÙ\ÈÚ]ÛÛY][™ÈZÙHÛÙOœœH\HœKXZ[ØØÈÚ]ØÛÙO‹Ü‚Ù]‚]ˆÛ\ÜÏH˜Ø\™‚ÏYÛÙO›[ØÚÏØÛÙOÚÏ‚‘›ÜˆÙ\š[İ\È”H›ÙXİ[Û‹ÛÙO›[ØÚÏØÛÙOˆ\È™Y™\˜X›HÈZ[[™È\™XİHYØZ[œİH]™H[š\›Û›Y[™XØ]\ÙH]Ü™X]\ÈÛX[‹\™Ù]\ÜXÚYšXÈ”HZ[›ÛİËÜ‚Ù]‚]ˆÛ\ÜÏH˜Ø\™‚Ï”X›\Ú™[X\Ù\ÏÚÏ‚‘›ÜˆYÙÙYZ[Ë]XÚHTÓÈ[™ÚXÚÜİ[HÈHÚ]Xˆ™[X\ÙH[œİXYÙˆ™[Z[™ÈÛ›HÛˆÚÜ\™][[ÛˆÛÜšÙ›İÈ\Y˜XİËÜ‚Ù]‚]ˆÛ\ÜÏH˜Ø\™‚Ï”™XÛÜ™HZ[X[šY™\İÚÏ‚‘^ÜÒUÒH™\œÚ[Û‹ÛÛZ[™\ˆYÙ\İ\İ™X[HÛÛ[Z]XÚØYÙH™\œÚ[ÛœËÛÜšÙ›İÈÒK[™TÓÈÚXÚÜİ[H[ÈÛ™HXXÚ[™K\™XYX›HX[šY™\İÜ‚Ù]‚Ù]‚‚ÏH›ÙXİ[Û‹[Z[™Y]\™H\[[™OÚÏ‚]ˆÛ\ÜÏH˜\˜Ú˜ÛÛ[Z]ÈYÂˆ8¥ ‚ˆ8¥¯˜Z[TÓÂˆ8¥ ‚ˆ8¥'8¥ 8¥ 8¥®ˆ›ÛİÛ[ÚÙH\İ[ˆQSUBˆ8¥ ˆ8¥'8¥ 8¥ ›ÛİİXØÙYYÏÂˆ8¥ ˆ8¥'8¥ 8¥ ™]ÛÜšÚ[™ÈÛÜšÜÏÂˆ8¥ ˆ8¥%8¥ 8¥ œKXZ[ÙØØËÙÚ]™\Ù[Âˆ8¥ ‚ˆ8¥'8¥ 8¥ 8¥®ˆÙ[™\˜]HX[šY™\İ
+ÈÒLM‚ˆ8¥ ‚ˆ8¥'8¥ 8¥ 8¥®ˆÚYÛˆÚXÚÜİ[Bˆ8¥ ‚ˆ8¥%8¥ 8¥ 8¥®ˆX›\ÚÚ]Xˆ™[X\ÙOÙ]‚ÜÙXİ[Û‚‚ÙXİ[ÛˆYHœÛİ\˜Ù\È‚”™Y™\™[˜Ù\ÏÚ‚[‚OH™YHšÎ‹ËÙØÜË˜Ù[ÜË›Ü™ËØÙ[ÜËX[\›˜]]™KZ[XYÙ\Ë\ÚYËÛ]™KZ[XYÙ\ËÈÙ[ÔÈ[\›˜]]™H[XYÙ\ÈÒQÈ8 %]™H[XYÙ\ÏØOÛO‚OH™YHšÎ‹ËÙØÜË˜Ù[ÜË›Ü™ËØÙ[ÜËX[\›˜]]™KZ[XYÙ\Ë\ÚYËÙ^K[ØØ[Z[XYÙ\ËÈÙ[ÔÈ[\›˜]]™H[XYÙ\ÈÒQÈ8 %VHØØ[Z[ÏØOÛO‚OH™YHšÎ‹ËÛÜÚ[œÚYK™Ú]X‹š[ËÚÚ]ÚKÈ’ÒUÒH‘ÈØİ[Y[][ÛØOÛO‚OH™YHšÎ‹ËÛÜÚ[œÚYK™Ú]X‹š[ËÚÚ]ÚKØÛÛ˜Ù\Ø[™İÛÜšÙ›İËš[’ÒUÒH‘È8 %ÛÛ˜Ù\[™ÛÜšÙ›İÏØOÛO‚OH™YHšÎ‹ËÛÜÚ[œÚYK™Ú]X‹š[ËÚÚ]ÚKØÛÛ[X[™ËÜŞ\İ[WØZ[š[’ÒUÒH‘È8 %ÛÙOœŞ\İ[HZ[ØÛÙOˆÛÛ[X[™ØOÛO‚OH™YHšÎ‹ËÙÚ]X‹˜ÛÛKİÚ[X[\ZËØÙ[ÜË\œXZ[–[İ\ˆÛÙO˜Ù[ÜË\œXZ[ØÛÙOˆ™\ÜÚ]ÜOØOÛO‚İ[‚‚]ˆÛ\ÜÏH˜Ø[İ][™›È‚”Û˜\Úİ›İNØˆ\ÈİZYH\ØÜšX™\ÈHÛÜšÚ[™È\ÚYÛˆ™XXÚY\š[™ÈHØİØ™\ˆŒˆXYÙÚ[™ÈÙ\ÜÚ[Û‹ˆ\İ™X[HÙ[ÔËÒÒUÒH]Z[ÈØ[ˆ]›Û™NÈH[ÜİİX›H\ÈÙˆH\ÚYÛˆ\™HHÛÛ˜Ù\È[™H\ÙHÙˆØİ[Y[YÒUÒH[\™˜XÙ\Ë‚Ù]‚ÜÙXİ[Û‚‚ÛXZ[‚Ù]‚‚›Ûİ\‚Z[\ÈHÙ[‹XÛÛZ[™YX\›š[™È\Y˜Xİ›ÜˆHÙ[ÔÈİ™X[HL”KXZ[\ˆ]™HTÓÈ›Ú™Xİ‚Ù›Ûİ\‚‚ØÜš\‚™Øİ[Y[œ]Y\TÙ[XİÜ[
+	Ü™IÊK™›Ü‘XXÚ
+™OOÂˆÛÛœİYØİ[Y[˜Ü™X]Q[[Y[
+	Ø]Û‰ÊNÂˆ‹^ÛÛ[IĞÛÜIÎÂˆ‹˜Û\ÜÓ˜[YOIØÛÜIÎÂˆ‹˜Y]™[\İ[™\Š	ØÛXÚÉË\Ş[˜È
+
+OOÂˆÛÛœİÛÙO\™Kœ]Y\TÙ[XİÜŠ	ØÛÙIÊNÂˆÛÛœİJÛÙOØÛÙKš[›™\•^œ™Kš[›™\•^
+Kœ™\XÙJ×ÛÜW‹Ë	ÉÊNÂˆ^Ø]ØZ]˜]šYØ]Ü‹˜Û\›Ø\™Üš]U^
+
+NØ‹^ÛÛ[IĞÛÜYY	ÎÜÙ][Y[İ]
+
+
+OO˜‹^ÛÛ[IĞÛÜIËLŒ
+_XØ]Ú
+J^ßBˆJNÂˆ™K˜\[™Ú[
+ŠNÂŸJNÂÜØÜš\‚Ø›ÙO‚Ú[
