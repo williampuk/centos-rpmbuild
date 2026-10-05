@@ -1,4 +1,4 @@
-name: Release CentOS Stream 10 Live RPM Builder ISO
+name: Release CentOS Stream 9 Live RPM Builder ISO
 
 on:
   push:
@@ -53,7 +53,7 @@ jobs:
             exit 1
           fi
 
-          release_name="centos-stream-10-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.iso"
+          release_name="centos-stream-9-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.iso"
           release_path="live-iso/out/${release_name}"
 
           mapfile -t manifests < <(
@@ -66,7 +66,7 @@ jobs:
             exit 1
           fi
 
-          release_manifest_name="centos-stream-10-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.packages"
+          release_manifest_name="centos-stream-9-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.packages"
           release_manifest_path="live-iso/out/${release_manifest_name}"
 
           mv "${isos[0]}" "${release_path}"
@@ -135,7 +135,7 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: centos-stream-10-rpm-builder-live-${{ github.ref_name }}
+          name: centos-stream-9-rpm-builder-live-${{ github.ref_name }}
           path: |
             ${{ steps.assets.outputs.iso }}
             ${{ steps.assets.outputs.packages }}
