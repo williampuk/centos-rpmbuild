@@ -2,6 +2,8 @@
 
 This directory builds a **CentOS Stream 10 `MIN-Live` ISO** with the RPM build toolchain used by this repository preinstalled.
 
+For a beginner-friendly explanation of the complete build mechanism, architecture, debugging journey, and lessons learned, open [`build-guide.html`](./build-guide.html).
+
 The image uses the CentOS Alternative Images SIG's official KIWI description for the `c10s` branch and builds the documented `MIN-Live` profile.
 
 The upstream KIWI XML is deliberately left untouched. Extra packages are supplied with KIWI's supported `--add-package` command-line option instead. This keeps the build independent of how CentOS organizes or refactors its XML files and components.
