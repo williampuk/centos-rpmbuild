@@ -1,4 +1,4 @@
-name: Build CentOS Stream 10 Live RPM Builder ISO
+name: Build CentOS Stream 9 Live RPM Builder ISO
 
 on:
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: centos-stream-10-rpm-builder-live
+          name: centos-stream-9-rpm-builder-live
           path: |
             live-iso/out/*.iso
             live-iso/out/*.packages
