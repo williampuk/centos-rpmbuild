@@ -13,6 +13,9 @@ tar
 which
 kernel-devel
 
+# Legacy SysV service compatibility (some vendor/driver installers expect this)
+chkconfig
+
 # Optical media
 xorriso
 
