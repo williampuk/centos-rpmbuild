@@ -1,4 +1,6 @@
 # Packages installed into the CentOS Stream 10 MIN-Live image.
+
+# RPM/build toolchain
 rpm-build
 rpmdevtools
 redhat-rpm-config
@@ -9,5 +11,34 @@ make
 git
 tar
 which
-xorriso
 kernel-devel
+
+# Optical media
+xorriso
+
+# Network management
+NetworkManager
+NetworkManager-tui
+NetworkManager-wifi
+
+# Core network diagnostics
+iproute
+iputils
+
+# HTTP/download
+curl
+wget
+
+# DNS
+bind-utils
+
+# Interface/link diagnostics
+ethtool
+
+# Packet/path diagnostics
+tcpdump
+traceroute
+
+# Remote access and TCP/UDP testing
+openssh-clients
+nmap-ncat
