@@ -23,8 +23,15 @@ The package list lives in `packages.txt`:
 - `tar`
 - `which`
 - `xorriso` — burn ISO images to CD/DVD/BD media
+- `kernel-devel` — headers and build files for compiling external kernel modules against the CentOS Stream kernel
 
 The CentOS AltImages recipe includes EPEL repository configuration, which is needed for packages such as `rpmlint`.
+
+### Kernel module development
+
+The image also includes `kernel-devel`. This package provides the kernel build files used by software that compiles external kernel modules, including the `/lib/modules/<kernel-version>/build` tree expected by many vendor installers.
+
+CentOS Stream 10 also provides `kernel-devel-matched`, a meta-package that explicitly pulls in matching `kernel-core` and `kernel-devel` versions. This image currently installs `kernel-devel` directly because that is the required package; KIWI resolves it together with the current Stream 10 image package set.
 
 ## Build locally
 
