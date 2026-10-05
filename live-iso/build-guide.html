@@ -65,6 +65,7 @@ tar
 which
 xorriso
 kernel-devel
+chkconfig
 NetworkManager
 NetworkManager-tui
 NetworkManager-wifi
@@ -304,6 +305,16 @@ vendor/module source ──► make ──► .ko kernel module</div>
 <div class="box info"><b>Related package:</b> CentOS Stream 10 also publishes <code>kernel-devel-matched</code>, whose purpose is to pull matching <code>kernel-core</code> and <code>kernel-devel</code> versions together. The project currently adds the explicitly requested <code>kernel-devel</code> package.</div>
 </section>
 
+<section>
+<h2>Legacy vendor-installer compatibility</h2>
+<p>The image also includes <code>chkconfig</code>. Modern CentOS uses <b>systemd</b>, so normal service management should use:</p>
+<pre><code>systemctl enable SERVICE
+systemctl start SERVICE
+systemctl status SERVICE</code></pre>
+<p>Some older vendor installers still execute commands such as <code>chkconfig --add ...</code> to register a service. If <code>chkconfig</code> is missing, the installer may abort or leave the service setup incomplete.</p>
+<div class="box warn"><b>Important:</b> installing <code>chkconfig</code> only helps when the installer actually depends on it. If the machine hangs during reboot because of a bad kernel module, shutdown hook, storage/network driver, or another kernel-level problem, <code>chkconfig</code> will not fix that underlying issue.</div>
+</section>
+
 <section id="security">
 <h2>9. Security, trust, and reproducibility</h2>
 <h3>Checksums</h3>
@@ -324,6 +335,7 @@ sha256sum -c SHA256SUMS</code></pre>
 <details><summary>DNF / YUM</summary><p>The package-management layer that resolves dependencies and downloads RPMs from configured repositories.</p></details>
 <details><summary>EPEL</summary><p>Extra Packages for Enterprise Linux, a repository providing additional software not shipped in the main enterprise-Linux repositories.</p></details>
 <details><summary>CRB</summary><p>A repository containing many development-oriented dependencies used for software building and some EPEL packages.</p></details>
+<details><summary>chkconfig</summary><p>A legacy SysV-service compatibility utility. CentOS Stream 10 normally uses systemd and <code>systemctl</code>, but some vendor or driver installers still call <code>chkconfig</code> while registering startup services. Having it installed can prevent those legacy installers from failing, but it is not itself a reboot command or a general fix for reboot hangs.</p></details>
 <details><summary>kernel-devel</summary><p>The CentOS package containing kernel headers, Makefiles, generated configuration, and other files needed to compile external kernel modules for a particular kernel version. Vendor driver installers commonly look for a path such as <code>/lib/modules/$(uname -r)/build</code>, which is supplied by the matching <code>kernel-devel</code> package.</p></details>
 <details><summary><code>/dev/sr0</code></summary><p>A common Linux device node for the first optical CD/DVD/BD drive. The exact number can vary.</p></details>
 <details><summary>xorriso</summary><p>A command-line tool for creating, inspecting, manipulating, and writing ISO 9660 optical-disc images.</p></details>
