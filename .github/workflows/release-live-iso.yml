@@ -1,0 +1,128 @@
+name: Release CentOS Stream 10 Live RPM Builder ISO
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-live-iso-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-live-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out tagged revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show release context
+        run: |
+          echo "Tag:        ${GITHUB_REF_NAME}"
+          echo "Commit:     ${GITHUB_SHA}"
+          echo "Repository: ${GITHUB_REPOSITORY}"
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          df -h
+
+      - name: Build ISO
+        run: bash ./live-iso/build.sh
+
+      - name: Prepare release assets
+        id: assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t isos < <(
+            find live-iso/out -maxdepth 1 -type f -name '*.iso' -print | sort
+          )
+
+          if (( ${#isos[@]} != 1 )); then
+            echo "Expected exactly one ISO, found ${#isos[@]}:" >&2
+            printf '  %s\n' "${isos[@]}" >&2
+            exit 1
+          fi
+
+          release_name="centos-stream-10-rpm-builder-live-${GITHUB_REF_NAME}-x86_64.iso"
+          release_path="live-iso/out/${release_name}"
+
+          mv "${isos[0]}" "${release_path}"
+
+          (
+            cd live-iso/out
+            sha256sum "${release_name}" > SHA256SUMS
+          )
+
+          cat > live-iso/out/BUILD_INFO.txt <<EOF
+          Release tag: ${GITHUB_REF_NAME}
+          Repository: ${GITHUB_REPOSITORY}
+          Repository commit: ${GITHUB_SHA}
+          Architecture: x86_64
+          CentOS KIWI upstream commit: $(cat live-iso/out/UPSTREAM_COMMIT.txt)
+          EOF
+
+          echo "iso=${release_path}" >> "${GITHUB_OUTPUT}"
+          echo "iso_name=${release_name}" >> "${GITHUB_OUTPUT}"
+
+          echo "Release assets:"
+          ls -lh live-iso/out
+          cat live-iso/out/SHA256SUMS
+          cat live-iso/out/BUILD_INFO.txt
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          assets=(
+            "${{ steps.assets.outputs.iso }}"
+            "live-iso/out/SHA256SUMS"
+            "live-iso/out/UPSTREAM_COMMIT.txt"
+            "live-iso/out/BUILD_INFO.txt"
+          )
+
+          if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${tag} already exists; replacing release assets."
+            gh release upload "${tag}" "${assets[@]}"               --repo "${GITHUB_REPOSITORY}"               --clobber
+          else
+            args=(
+              release create "${tag}"
+              "${assets[@]}"
+              --repo "${GITHUB_REPOSITORY}"
+              --title "${tag}"
+              --generate-notes
+              --verify-tag
+            )
+
+            # SemVer-style suffixes such as -beta, -rc.1, etc. are prereleases.
+            if [[ "${tag}" == *-* ]]; then
+              args+=(--prerelease)
+            fi
+
+            gh "${args[@]}"
+          fi
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: centos-stream-10-rpm-builder-live-${{ github.ref_name }}
+          path: |
+            ${{ steps.assets.outputs.iso }}
+            live-iso/out/SHA256SUMS
+            live-iso/out/UPSTREAM_COMMIT.txt
+            live-iso/out/BUILD_INFO.txt
+          if-no-files-found: error
+          retention-days: 14
