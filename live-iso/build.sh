@@ -12,7 +12,6 @@ KIWI_PROFILE="${KIWI_PROFILE:-MIN-Live}"
 
 command -v git >/dev/null
 command -v docker >/dev/null
-command -v python3 >/dev/null
 
 rm -rf "${WORK_DIR}" "${OUT_DIR}"
 mkdir -p "${WORK_DIR}" "${OUT_DIR}"
@@ -35,21 +34,17 @@ EOF
   exit 1
 fi
 
-echo "Upstream files:"
-find "${UPSTREAM_DIR}" -maxdepth 2 -type f -printf '  %P\n' | sort | head -100
-
 git -C "${UPSTREAM_DIR}" rev-parse HEAD > "${OUT_DIR}/UPSTREAM_COMMIT.txt"
 
-echo "Customizing KIWI profile: ${KIWI_PROFILE}"
-python3 "${SCRIPT_DIR}/customize.py" \
-  --config "${UPSTREAM_DIR}/config.xml" \
-  --packages "${SCRIPT_DIR}/packages.txt"
+echo "Requested additional packages:"
+grep -Ev '^[[:space:]]*(#|$)' "${SCRIPT_DIR}/packages.txt" | sed 's/^/  - /'
 
 echo "Building CentOS Stream 10 ${KIWI_PROFILE} ISO with KIWI..."
 docker run --rm --privileged \
   -v /dev:/dev \
   -v "${UPSTREAM_DIR}:/kiwi:rw" \
   -v "${OUT_DIR}:/out:rw" \
+  -v "${SCRIPT_DIR}/packages.txt:/packages.txt:ro" \
   -e "KIWI_PROFILE=${KIWI_PROFILE}" \
   "${CONTAINER_IMAGE}" \
   bash -euxo pipefail -c '
@@ -58,7 +53,16 @@ docker run --rm --privileged \
     dnf -y install kiwi policycoreutils
 
     echo "Available KIWI profiles:"
-    kiwi-ng --type=iso system profiles --description=/kiwi || true
+    kiwi-ng image info --description=/kiwi --list-profiles || true
+
+    mapfile -t packages < <(grep -Ev "^[[:space:]]*(#|$)" /packages.txt)
+    package_args=()
+    for package in "${packages[@]}"; do
+      package_args+=(--add-package="${package}")
+    done
+
+    echo "Adding packages through KIWI command-line overrides:"
+    printf "  %s\n" "${packages[@]}"
 
     kiwi-ng \
       --type=iso \
@@ -66,7 +70,8 @@ docker run --rm --privileged \
       --color-output \
       system build \
       --description=/kiwi \
-      --target-dir=/out
+      --target-dir=/out \
+      "${package_args[@]}"
   '
 
 mapfile -t isos < <(find "${OUT_DIR}" -maxdepth 1 -type f -name '*.iso' -print | sort)
