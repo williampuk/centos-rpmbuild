@@ -63,7 +63,8 @@ make
 git
 tar
 which
-xorriso</code></pre>
+xorriso
+kernel-devel</code></pre>
 <div class="box good"><b>Output:</b> GitHub Actions builds a bootable <code>.iso</code>, generates <code>SHA256SUMS</code>, and records the exact upstream CentOS KIWI recipe commit in <code>UPSTREAM_COMMIT.txt</code>.</div>
 </section>
 
@@ -240,6 +241,26 @@ xorriso
 <p>KIWI installs it directly into the Live root filesystem during image construction.</p>
 </section>
 
+<section>
+<h2>Kernel-module build support</h2>
+<p>The Live image also installs <code>kernel-devel</code>. This matters when a hardware/vendor installer needs to compile a kernel module locally rather than shipping a module that already matches the running kernel.</p>
+<div class="arch">running kernel
+      │
+      │ uname -r
+      ▼
+6.12.x-...el10.x86_64
+      │
+      ▼
+/lib/modules/&lt;same-version&gt;/build
+      │
+      ▼
+kernel-devel files
+      │
+      ▼
+vendor/module source ──► make ──► .ko kernel module</div>
+<div class="box info"><b>Related package:</b> CentOS Stream 10 also publishes <code>kernel-devel-matched</code>, whose purpose is to pull matching <code>kernel-core</code> and <code>kernel-devel</code> versions together. The project currently adds the explicitly requested <code>kernel-devel</code> package.</div>
+</section>
+
 <section id="security">
 <h2>9. Security, trust, and reproducibility</h2>
 <h3>Checksums</h3>
@@ -260,6 +281,7 @@ sha256sum -c SHA256SUMS</code></pre>
 <details><summary>DNF / YUM</summary><p>The package-management layer that resolves dependencies and downloads RPMs from configured repositories.</p></details>
 <details><summary>EPEL</summary><p>Extra Packages for Enterprise Linux, a repository providing additional software not shipped in the main enterprise-Linux repositories.</p></details>
 <details><summary>CRB</summary><p>A repository containing many development-oriented dependencies used for software building and some EPEL packages.</p></details>
+<details><summary>kernel-devel</summary><p>The CentOS package containing kernel headers, Makefiles, generated configuration, and other files needed to compile external kernel modules for a particular kernel version. Vendor driver installers commonly look for a path such as <code>/lib/modules/$(uname -r)/build</code>, which is supplied by the matching <code>kernel-devel</code> package.</p></details>
 <details><summary><code>/dev/sr0</code></summary><p>A common Linux device node for the first optical CD/DVD/BD drive. The exact number can vary.</p></details>
 <details><summary>xorriso</summary><p>A command-line tool for creating, inspecting, manipulating, and writing ISO 9660 optical-disc images.</p></details>
 <details><summary>Bind mount</summary><p>A way to expose a host directory/file at a path inside a container, such as mapping the upstream recipe to <code>/kiwi</code> and build outputs to <code>/out</code>.</p></details>
