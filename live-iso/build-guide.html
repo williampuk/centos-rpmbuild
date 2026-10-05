@@ -64,7 +64,20 @@ git
 tar
 which
 xorriso
-kernel-devel</code></pre>
+kernel-devel
+NetworkManager
+NetworkManager-tui
+NetworkManager-wifi
+iproute
+iputils
+curl
+wget
+bind-utils
+ethtool
+tcpdump
+traceroute
+openssh-clients
+nmap-ncat</code></pre>
 <div class="box good"><b>Output:</b> GitHub Actions builds a bootable <code>.iso</code>, generates <code>SHA256SUMS</code>, and records the exact upstream CentOS KIWI recipe commit in <code>UPSTREAM_COMMIT.txt</code>.</div>
 </section>
 
@@ -182,6 +195,36 @@ live-iso/out/UPSTREAM_COMMIT.txt</code></pre>
 <div class="event"><h3>4. Profile/XML assumptions failed</h3><p>We tried to discover profiles and later tried to inject XML before <code>&lt;/image&gt;</code>. The upstream recipe had a different/componentized structure. Lesson: don't build against undocumented internal representation when the tool exposes a supported CLI.</p></div>
 <div class="event"><h3>5. Final robust approach</h3><p>Use repeated <code>--add-package</code> options. This is the clean public interface and survives upstream XML refactoring much better.</p></div>
 </div>
+</section>
+
+<section>
+<h2>Networking toolkit</h2>
+<p>The Live image explicitly installs a practical set of networking packages instead of relying on whatever the upstream <code>MIN-Live</code> profile happens to contain.</p>
+<table>
+<tr><th>Task</th><th>Command</th></tr>
+<tr><td>Configure interfaces/connections</td><td><code>nmcli</code></td></tr>
+<tr><td>Text-mode NetworkManager UI</td><td><code>nmtui</code></td></tr>
+<tr><td>Wi-Fi discovery/configuration</td><td><code>nmcli dev wifi</code></td></tr>
+<tr><td>Addresses/routes/links</td><td><code>ip</code></td></tr>
+<tr><td>Socket inspection</td><td><code>ss</code></td></tr>
+<tr><td>Reachability/path basics</td><td><code>ping</code>, <code>tracepath</code></td></tr>
+<tr><td>HTTP and downloads</td><td><code>curl</code>, <code>wget</code></td></tr>
+<tr><td>DNS troubleshooting</td><td><code>dig</code>, <code>nslookup</code></td></tr>
+<tr><td>NIC/link information</td><td><code>ethtool</code></td></tr>
+<tr><td>Packet capture</td><td><code>tcpdump</code></td></tr>
+<tr><td>Route tracing</td><td><code>traceroute</code></td></tr>
+<tr><td>Remote shell/copy</td><td><code>ssh</code>, <code>scp</code></td></tr>
+<tr><td>TCP/UDP connectivity testing</td><td><code>nc</code></td></tr>
+</table>
+<div class="box info"><b>Modern Linux note:</b> this image intentionally relies on <code>ip</code> and <code>ss</code> rather than adding the legacy <code>net-tools</code> package just for <code>ifconfig</code>, <code>route</code>, or <code>netstat</code>.</div>
+
+<h3>The KIWI package manifest</h3>
+<p>KIWI emits a <code>*.packages</code> file containing the package set actually present in the image. Both the ordinary CI build and tagged release workflow now preserve that file alongside the ISO.</p>
+<pre><code>CentOS-Stream-Image.x86_64-10.iso
+CentOS-Stream-Image.x86_64-10.packages
+SHA256SUMS
+UPSTREAM_COMMIT.txt</code></pre>
+<p>This is much stronger than guessing from the upstream profile: for any particular build, the manifest is the authoritative answer to “what packages are inside this ISO?”</p>
 </section>
 
 <section id="dvd">
