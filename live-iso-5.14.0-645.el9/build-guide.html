@@ -299,9 +299,9 @@ KIWI c9s recipe (commit recorded per build)</div>
 ├── build-live-iso-kernel-5.14.0-645-el9.yml
 └── release-live-iso-kernel-5.14.0-645-el9.yml</code></pre>
 <p>The release workflow intentionally uses a separate tag namespace:</p>
-<pre><code>kernel-5.14.0-645.el9-v0.0.1
-kernel-5.14.0-645.el9-v0.0.2-beta</code></pre>
-<p>This avoids triggering the ordinary rolling image's <code>v*</code> release workflow.</p>
+<pre><code>v0.0.1-kernel-5.14.0-645.el9
+v0.0.2-beta-kernel-5.14.0-645.el9</code></pre>
+<p>The ordinary rolling release workflow matches <code>v*</code> but explicitly excludes <code>v*-kernel-*</code>, so a kernel-specific tag triggers only this pinned-kernel workflow.</p>
 </section>
 
 <section id="glossary">

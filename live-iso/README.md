@@ -206,6 +206,6 @@ The workflow:
 7. marks tags containing a suffix such as `-beta` or `-rc.1` as prereleases;
 8. uploads the ISO, KIWI package manifest, checksum, upstream commit, and build-info file as release assets.
 
-The tag pattern is intentionally broad (`v*`), so values such as `v0.0.1`, `v1.2.3-beta`, and `v2.0.0-rc.1` will all trigger the release workflow.
+The normal release workflow accepts version tags such as `v0.0.1`, `v1.2.3-beta`, and `v2.0.0-rc.1`, but explicitly excludes `v*-kernel-*`. Kernel-specific variants such as `v0.0.1-kernel-5.14.0-645.el9` are handled by their dedicated release workflow.
 
 If a release already exists for the tag and the workflow is rerun, the workflow replaces the assets instead of trying to create a duplicate release.

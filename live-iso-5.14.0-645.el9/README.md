@@ -202,20 +202,20 @@ It is separate from the ordinary Stream 9 `live-iso/` workflow.
 
 ## Releases
 
-The pinned variant uses a separate tag namespace so it does not collide with the normal `v*` release workflow.
+The pinned variant uses a version-first tag ending in `-kernel-5.14.0-645.el9`. The normal release workflow explicitly excludes `v*-kernel-*`, so exactly one release workflow handles each tag.
 
 Use:
 
 ```bash
-git tag kernel-5.14.0-645.el9-v0.0.1
-git push origin kernel-5.14.0-645.el9-v0.0.1
+git tag v0.0.1-kernel-5.14.0-645.el9
+git push origin v0.0.1-kernel-5.14.0-645.el9
 ```
 
 Prerelease example:
 
 ```bash
-git tag kernel-5.14.0-645.el9-v0.0.1-beta
-git push origin kernel-5.14.0-645.el9-v0.0.1-beta
+git tag v0.0.1-beta-kernel-5.14.0-645.el9
+git push origin v0.0.1-beta-kernel-5.14.0-645.el9
 ```
 
 The corresponding workflow is:
