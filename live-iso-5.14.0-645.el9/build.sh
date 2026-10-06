@@ -71,7 +71,7 @@ docker run --rm --privileged \
   bash -euxo pipefail -c '
     dnf -y install dnf-plugins-core epel-release
     dnf config-manager --set-enabled crb
-    dnf -y install kiwi policycoreutils createrepo_c rpm python3
+    dnf -y install kiwi policycoreutils curl-minimal createrepo_c rpm python3
 
     command -v curl >/dev/null
 
