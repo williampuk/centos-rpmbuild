@@ -111,7 +111,11 @@ if actual_nvr != expected_nvr:
         f"Koji build ID {build_id} is {actual_nvr!r}, expected {expected_nvr!r}"
     )
 
-rpms = session.listRPMs(buildID=build_id)
+# Raw Python xmlrpc.client only supports positional XML-RPC arguments.
+# Koji's listRPMs signature starts with buildID, so passing the build ID as
+# the first positional argument is equivalent to Koji client code using
+# listRPMs(buildID=build_id).
+rpms = session.listRPMs(build_id)
 selected = {}
 for rpm in rpms:
     if rpm.get("name") in required and rpm.get("arch") == arch:
