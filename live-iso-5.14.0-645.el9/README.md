@@ -202,13 +202,25 @@ It is separate from the ordinary Stream 9 `live-iso/` workflow.
 
 ## Releases
 
-The pinned variant uses a version-first tag ending in `-kernel-5.14.0-645.el9`. The normal release workflow explicitly excludes `v*-kernel-*`, so exactly one release workflow handles each tag.
+The pinned-kernel workflow uses a **long trigger tag** to select the build variant, but publishes the GitHub Release under the shorter version tag.
 
-Use:
+Stable example:
 
 ```bash
 git tag v0.0.1-kernel-5.14.0-645.el9
 git push origin v0.0.1-kernel-5.14.0-645.el9
+```
+
+This triggers the pinned-kernel workflow, which derives:
+
+```text
+trigger tag:
+v0.0.1-kernel-5.14.0-645.el9
+        │
+        │ strip "-kernel-5.14.0-645.el9"
+        ▼
+public GitHub Release tag:
+v0.0.1
 ```
 
 Prerelease example:
@@ -218,22 +230,48 @@ git tag v0.0.1-beta-kernel-5.14.0-645.el9
 git push origin v0.0.1-beta-kernel-5.14.0-645.el9
 ```
 
-The corresponding workflow is:
+which publishes the release as:
 
 ```text
-.github/workflows/release-live-iso-kernel-5.14.0-645-el9.yml
+v0.0.1-beta
 ```
 
-Release assets include the ISO, package manifest, kernel-verification evidence, kernel-RPM checksums, upstream recipe commit, and build information.
+The corresponding workflow matches:
+
+```yaml
+tags:
+  - "v*-kernel-5.14.0-645.el9"
+```
+
+The ordinary rolling Stream 9 image uses `v*-el9`, for example:
+
+```text
+v0.0.1-el9
+v0.0.1-beta-el9
+```
+
+so the two release families do not collide.
+
+### Safety check for the short release tag
+
+Before publishing, the pinned workflow checks whether the derived short tag (for example `v0.0.1-beta`) already exists.
+
+- If it does not exist, GitHub creates it at the exact commit referenced by the long trigger tag.
+- If it already exists and points to the same commit, the workflow may create/update the release.
+- If it points to a different commit, the workflow fails rather than attaching artifacts to the wrong release.
+
+This gives the long tag the role of **build selector**, while the short tag remains the clean public version.
 
 ### Tag routing summary
 
-| Tag | Workflow |
-| --- | --- |
-| `v0.0.1` | normal rolling Stream 9 Live ISO |
-| `v0.0.1-beta` | normal rolling prerelease |
-| `v0.0.1-kernel-5.14.0-645.el9` | pinned-kernel Live ISO |
-| `v0.0.1-beta-kernel-5.14.0-645.el9` | pinned-kernel prerelease |
+| Trigger tag | Built image | Public GitHub Release |
+| --- | --- | --- |
+| `v0.0.1-el9` | rolling Stream 9 | `v0.0.1-el9` |
+| `v0.0.1-beta-el9` | rolling Stream 9 | `v0.0.1-beta-el9` |
+| `v0.0.1-kernel-5.14.0-645.el9` | pinned kernel | `v0.0.1` |
+| `v0.0.1-beta-kernel-5.14.0-645.el9` | pinned kernel | `v0.0.1-beta` |
+
+Release assets include the ISO, package manifest, kernel-verification evidence, kernel-RPM checksums, upstream recipe commit, and build information.
 
 ## Security consequence of pinning
 
