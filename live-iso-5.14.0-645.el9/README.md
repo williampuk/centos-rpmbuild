@@ -120,6 +120,8 @@ It also requires **exactly one** `kernel-core` entry, preventing a newer second 
 
 A successful build produces `KERNEL_PIN_VERIFIED.txt`.
 
+`KOJI_BUILD_INFO.txt` records the result of querying CentOS Stream Koji at build time. The build aborts unless Koji build ID `91148` resolves to NVR `kernel-5.14.0-645.el9` and contains every required x86_64 RPM.
+
 ## Included non-kernel tools
 
 The rest of the package set mirrors `live-iso/`:
@@ -156,6 +158,7 @@ live-iso-5.14.0-645.el9/out/
 ├── SHA256SUMS
 ├── KERNEL_RPM_SHA256SUMS
 ├── PINNED_KERNEL_RPMS.txt
+├── KOJI_BUILD_INFO.txt
 ├── KERNEL_PIN_VERIFIED.txt
 ├── UPSTREAM_COMMIT.txt
 └── BUILD_INFO.txt
