@@ -71,7 +71,7 @@ docker run --rm --privileged \
   bash -euxo pipefail -c '
     dnf -y install dnf-plugins-core epel-release
     dnf config-manager --set-enabled crb
-    dnf -y install kiwi policycoreutils curl createrepo_c rpm
+    dnf -y install kiwi policycoreutils curl createrepo_c rpm python3
 
     pinned_repo=/pinned-kernel-repo
     mkdir -p "${pinned_repo}"
@@ -80,7 +80,65 @@ docker run --rm --privileged \
       grep -Ev "^[[:space:]]*(#|$)" /kernel-rpms.txt
     )
 
-    echo "Downloading exact kernel RPM family from CentOS Stream Koji build ${KERNEL_BUILD_ID}..."
+    echo "Verifying CentOS Stream Koji build identity and RPM list..."
+    python3 - <<'PY' | tee /out/KOJI_BUILD_INFO.txt
+import os
+import sys
+import xmlrpc.client
+
+hub = os.environ["KOJI_HUB"]
+build_id = int(os.environ["KERNEL_BUILD_ID"])
+expected_nvr = "kernel-" + os.environ["KERNEL_VERSION"] + "-" + os.environ["KERNEL_RELEASE"]
+arch = os.environ["TARGET_ARCH"]
+
+with open("/kernel-rpms.txt", encoding="utf-8") as f:
+    required = [
+        line.strip()
+        for line in f
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+
+session = xmlrpc.client.ServerProxy(hub, allow_none=True)
+build = session.getBuild(build_id)
+if not build:
+    raise SystemExit(f"Koji build ID {build_id} does not exist")
+
+actual_nvr = build.get("nvr")
+if actual_nvr != expected_nvr:
+    raise SystemExit(
+        f"Koji build ID {build_id} is {actual_nvr!r}, expected {expected_nvr!r}"
+    )
+
+rpms = session.listRPMs(buildID=build_id)
+selected = {}
+for rpm in rpms:
+    if rpm.get("name") in required and rpm.get("arch") == arch:
+        selected[rpm["name"]] = rpm
+
+missing = [name for name in required if name not in selected]
+if missing:
+    raise SystemExit(
+        "Required RPMs missing from Koji build "
+        + str(build_id)
+        + ": "
+        + ", ".join(missing)
+    )
+
+print(f"Koji hub: {hub}")
+print(f"Build ID: {build_id}")
+print(f"NVR: {actual_nvr}")
+print(f"Task ID: {build.get('task_id')}")
+print(f"State: {build.get('state')}")
+print("Selected RPMs:")
+for name in required:
+    rpm = selected[name]
+    print(
+        f"  {rpm['name']}-{rpm['version']}-{rpm['release']}."
+        f"{rpm['arch']}.rpm"
+    )
+PY
+
+    echo "Downloading exact kernel RPM family from verified Koji build ${KERNEL_BUILD_ID}..."
     for package in "${kernel_packages[@]}"; do
       rpm_name="${package}-${KERNEL_VERSION}-${KERNEL_RELEASE}.${TARGET_ARCH}.rpm"
       rpm_url="${KOJI_TOPURL}/packages/kernel/${KERNEL_VERSION}/${KERNEL_RELEASE}/${TARGET_ARCH}/${rpm_name}"
