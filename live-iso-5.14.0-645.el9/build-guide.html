@@ -105,7 +105,7 @@ TARGET_ARCH=x86_64</code></pre>
         ▼                ▼                     ▼
    kernel-core      kernel-devel        kernel-modules...
       .rpm              .rpm                 .rpm</div>
-<p>The build script does not merely trust our text configuration. It queries the public Koji XML-RPC API and requires:</p>
+<p>The build does not merely trust our text configuration. A standalone <code>verify-koji.py</code> helper is mounted read-only into the build container, queries the public Koji XML-RPC API, and requires:</p>
 <pre><code>build ID 91148
         │
         └── NVR == kernel-5.14.0-645.el9</code></pre>
@@ -276,6 +276,8 @@ KIWI c9s recipe (commit recorded per build)</div>
 <div class="arch">live-iso-5.14.0-645.el9/
 ├── build.sh
 │   └── complete build + validation pipeline
+├── verify-koji.py
+│   └── standalone Koji verifier mounted into the build container
 ├── config.env
 │   └── kernel NVR, Koji build ID, architecture, Koji endpoints
 ├── kernel-rpms.txt
