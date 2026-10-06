@@ -103,6 +103,7 @@ jobs:
             "${out}/SHA256SUMS"
             "${out}/KERNEL_RPM_SHA256SUMS"
             "${out}/PINNED_KERNEL_RPMS.txt"
+            "${out}/KOJI_BUILD_INFO.txt"
             "${out}/KERNEL_PIN_VERIFIED.txt"
             "${out}/UPSTREAM_COMMIT.txt"
             "${out}/BUILD_INFO.txt"
@@ -122,7 +123,8 @@ jobs:
               --verify-tag
             )
 
-            if [[ "${tag}" == *-*"-beta"* || "${tag}" == *-*"-rc"* || "${tag}" == *-*"-alpha"* ]]; then
+            version="${tag#kernel-5.14.0-645.el9-v}"
+            if [[ "${version}" == *-* ]]; then
               args+=(--prerelease)
             fi
 
@@ -139,6 +141,7 @@ jobs:
             live-iso-5.14.0-645.el9/out/SHA256SUMS
             live-iso-5.14.0-645.el9/out/KERNEL_RPM_SHA256SUMS
             live-iso-5.14.0-645.el9/out/PINNED_KERNEL_RPMS.txt
+            live-iso-5.14.0-645.el9/out/KOJI_BUILD_INFO.txt
             live-iso-5.14.0-645.el9/out/KERNEL_PIN_VERIFIED.txt
             live-iso-5.14.0-645.el9/out/UPSTREAM_COMMIT.txt
             live-iso-5.14.0-645.el9/out/BUILD_INFO.txt
