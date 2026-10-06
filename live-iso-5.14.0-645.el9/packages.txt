@@ -1,0 +1,47 @@
+# Additional non-kernel packages installed into the pinned CentOS Stream 9 MIN-Live image.
+# Kernel packages are handled separately by kernel-rpms.txt.
+
+# RPM/build toolchain
+rpm-build
+rpmdevtools
+redhat-rpm-config
+yum-utils
+rpmlint
+gcc
+make
+git
+tar
+which
+
+# Legacy SysV service compatibility (some vendor/driver installers expect this)
+chkconfig
+
+# Optical media
+xorriso
+
+# Network management
+NetworkManager
+NetworkManager-tui
+NetworkManager-wifi
+
+# Core network diagnostics
+iproute
+iputils
+
+# HTTP/download
+curl
+wget
+
+# DNS
+bind-utils
+
+# Interface/link diagnostics
+ethtool
+
+# Packet/path diagnostics
+tcpdump
+traceroute
+
+# Remote access and TCP/UDP testing
+openssh-clients
+nmap-ncat
