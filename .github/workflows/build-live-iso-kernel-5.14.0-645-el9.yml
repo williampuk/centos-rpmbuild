@@ -1,0 +1,60 @@
+name: Build CentOS Stream 9 Live ISO (kernel 5.14.0-645.el9)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "live-iso-5.14.0-645.el9/**"
+      - ".github/workflows/build-live-iso-kernel-5.14.0-645-el9.yml"
+  pull_request:
+    paths:
+      - "live-iso-5.14.0-645.el9/**"
+      - ".github/workflows/build-live-iso-kernel-5.14.0-645-el9.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-pinned-kernel-live-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          df -h
+
+      - name: Build pinned-kernel ISO
+        run: bash ./live-iso-5.14.0-645.el9/build.sh
+
+      - name: Show build output
+        if: always()
+        run: |
+          df -h
+          if [ -d live-iso-5.14.0-645.el9/out ]; then
+            ls -lah live-iso-5.14.0-645.el9/out
+            test ! -f live-iso-5.14.0-645.el9/out/KERNEL_PIN_VERIFIED.txt || cat live-iso-5.14.0-645.el9/out/KERNEL_PIN_VERIFIED.txt
+            test ! -f live-iso-5.14.0-645.el9/out/SHA256SUMS || cat live-iso-5.14.0-645.el9/out/SHA256SUMS
+          fi
+
+      - name: Upload pinned-kernel build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: centos-stream-9-kernel-5.14.0-645.el9-rpm-builder-live
+          path: |
+            live-iso-5.14.0-645.el9/out/*.iso
+            live-iso-5.14.0-645.el9/out/*.packages
+            live-iso-5.14.0-645.el9/out/SHA256SUMS
+            live-iso-5.14.0-645.el9/out/KERNEL_RPM_SHA256SUMS
+            live-iso-5.14.0-645.el9/out/PINNED_KERNEL_RPMS.txt
+            live-iso-5.14.0-645.el9/out/KERNEL_PIN_VERIFIED.txt
+            live-iso-5.14.0-645.el9/out/UPSTREAM_COMMIT.txt
+            live-iso-5.14.0-645.el9/out/BUILD_INFO.txt
+          if-no-files-found: error
+          retention-days: 14
