@@ -44,6 +44,17 @@ jobs:
           set -euo pipefail
 
           out="live-iso-5.14.0-645.el9/out"
+          trigger_tag="${GITHUB_REF_NAME}"
+          kernel_suffix="-kernel-5.14.0-645.el9"
+          release_tag="${trigger_tag%${kernel_suffix}}"
+
+          if [[ "${release_tag}" == "${trigger_tag}" || -z "${release_tag}" ]]; then
+            echo "ERROR: Could not derive release tag from trigger tag ${trigger_tag}" >&2
+            exit 1
+          fi
+
+          echo "Trigger tag: ${trigger_tag}"
+          echo "Release tag: ${release_tag}"
 
           mapfile -t isos < <(
             find "${out}" -maxdepth 1 -type f -name '*.iso' -print | sort
@@ -61,7 +72,7 @@ jobs:
             exit 1
           fi
 
-          release_base="centos-stream-9-kernel-5.14.0-645.el9-rpm-builder-live-${GITHUB_REF_NAME}-x86_64"
+          release_base="centos-stream-9-kernel-5.14.0-645.el9-rpm-builder-live-${release_tag}-x86_64"
           iso_path="${out}/${release_base}.iso"
           packages_path="${out}/${release_base}.packages"
 
@@ -75,13 +86,15 @@ jobs:
 
           {
             echo
-            echo "GitHub release tag: ${GITHUB_REF_NAME}"
+            echo "GitHub trigger tag: ${trigger_tag}"
+            echo "GitHub release tag: ${release_tag}"
             echo "Repository: ${GITHUB_REPOSITORY}"
             echo "Repository commit: ${GITHUB_SHA}"
           } >> "${out}/BUILD_INFO.txt"
 
           echo "iso=${iso_path}" >> "${GITHUB_OUTPUT}"
           echo "packages=${packages_path}" >> "${GITHUB_OUTPUT}"
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
 
           echo "Release assets:"
           ls -lh "${out}"
@@ -95,7 +108,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          tag="${GITHUB_REF_NAME}"
+          trigger_tag="${GITHUB_REF_NAME}"
+          release_tag="${{ steps.assets.outputs.release_tag }}"
           out="live-iso-5.14.0-645.el9/out"
           assets=(
             "${{ steps.assets.outputs.iso }}"
@@ -109,22 +123,43 @@ jobs:
             "${out}/BUILD_INFO.txt"
           )
 
-          if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release upload "${tag}" "${assets[@]}" \
+          # The long tag selects the pinned-kernel build, while the shorter tag
+          # is the public GitHub Release version. Never attach build artifacts
+          # to a short tag that already points at a different commit.
+          git fetch --force --tags origin
+
+          release_tag_exists=false
+          if git rev-parse --verify --quiet "refs/tags/${release_tag}^{commit}" >/dev/null; then
+            release_tag_exists=true
+            existing_sha="$(git rev-parse "refs/tags/${release_tag}^{commit}")"
+            if [[ "${existing_sha}" != "${GITHUB_SHA}" ]]; then
+              echo "ERROR: Release tag ${release_tag} already points to ${existing_sha}" >&2
+              echo "but trigger tag ${trigger_tag} points to ${GITHUB_SHA}." >&2
+              exit 1
+            fi
+          fi
+
+          if gh release view "${release_tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${release_tag} already exists; replacing release assets."
+            gh release upload "${release_tag}" "${assets[@]}" \
               --repo "${GITHUB_REPOSITORY}" \
               --clobber
           else
             args=(
-              release create "${tag}"
+              release create "${release_tag}"
               "${assets[@]}"
               --repo "${GITHUB_REPOSITORY}"
-              --title "${tag}"
+              --title "${release_tag}"
               --generate-notes
-              --verify-tag
             )
 
-            release_version="${tag%-kernel-5.14.0-645.el9}"
-            if [[ "${release_version}" == *-* ]]; then
+            if [[ "${release_tag_exists}" == true ]]; then
+              args+=(--verify-tag)
+            else
+              args+=(--target "${GITHUB_SHA}")
+            fi
+
+            if [[ "${release_tag}" == *-* ]]; then
               args+=(--prerelease)
             fi
 
