@@ -1,0 +1,10 @@
+# RPM names downloaded from the exact Koji build in config.env.
+# All of these must resolve to KERNEL_VERSION-KERNEL_RELEASE.
+kernel
+kernel-core
+kernel-modules-core
+kernel-modules
+kernel-modules-extra
+kernel-devel
+kernel-devel-matched
+kernel-headers
