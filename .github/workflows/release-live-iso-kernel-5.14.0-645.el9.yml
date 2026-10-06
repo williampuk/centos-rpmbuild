@@ -1,0 +1,149 @@
+name: Release CentOS Stream 9 Live ISO (kernel 5.14.0-645.el9)
+
+on:
+  push:
+    tags:
+      - "v*-kernel-5.14.0-645.el9"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-live-iso-kernel-5.14.0-645-el9-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-pinned-kernel-live-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - name: Check out tagged revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show release context
+        run: |
+          echo "Tag:        ${GITHUB_REF_NAME}"
+          echo "Commit:     ${GITHUB_SHA}"
+          echo "Repository: ${GITHUB_REPOSITORY}"
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          df -h
+
+      - name: Build pinned-kernel ISO
+        run: bash ./live-iso-5.14.0-645.el9/build.sh
+
+      - name: Prepare release assets
+        id: assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          out="live-iso-5.14.0-645.el9/out"
+
+          mapfile -t isos < <(
+            find "${out}" -maxdepth 1 -type f -name '*.iso' -print | sort
+          )
+          if (( ${#isos[@]} != 1 )); then
+            echo "Expected exactly one ISO, found ${#isos[@]}." >&2
+            exit 1
+          fi
+
+          mapfile -t manifests < <(
+            find "${out}" -maxdepth 1 -type f -name '*.packages' -print | sort
+          )
+          if (( ${#manifests[@]} != 1 )); then
+            echo "Expected exactly one package manifest, found ${#manifests[@]}." >&2
+            exit 1
+          fi
+
+          release_base="centos-stream-9-kernel-5.14.0-645.el9-rpm-builder-live-${GITHUB_REF_NAME}-x86_64"
+          iso_path="${out}/${release_base}.iso"
+          packages_path="${out}/${release_base}.packages"
+
+          mv "${isos[0]}" "${iso_path}"
+          cp "${manifests[0]}" "${packages_path}"
+
+          (
+            cd "${out}"
+            sha256sum "$(basename "${iso_path}")" > SHA256SUMS
+          )
+
+          {
+            echo
+            echo "GitHub release tag: ${GITHUB_REF_NAME}"
+            echo "Repository: ${GITHUB_REPOSITORY}"
+            echo "Repository commit: ${GITHUB_SHA}"
+          } >> "${out}/BUILD_INFO.txt"
+
+          echo "iso=${iso_path}" >> "${GITHUB_OUTPUT}"
+          echo "packages=${packages_path}" >> "${GITHUB_OUTPUT}"
+
+          echo "Release assets:"
+          ls -lh "${out}"
+          cat "${out}/KERNEL_PIN_VERIFIED.txt"
+          cat "${out}/SHA256SUMS"
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          out="live-iso-5.14.0-645.el9/out"
+          assets=(
+            "${{ steps.assets.outputs.iso }}"
+            "${{ steps.assets.outputs.packages }}"
+            "${out}/SHA256SUMS"
+            "${out}/KERNEL_RPM_SHA256SUMS"
+            "${out}/PINNED_KERNEL_RPMS.txt"
+            "${out}/KOJI_BUILD_INFO.txt"
+            "${out}/KERNEL_PIN_VERIFIED.txt"
+            "${out}/UPSTREAM_COMMIT.txt"
+            "${out}/BUILD_INFO.txt"
+          )
+
+          if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${tag}" "${assets[@]}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --clobber
+          else
+            args=(
+              release create "${tag}"
+              "${assets[@]}"
+              --repo "${GITHUB_REPOSITORY}"
+              --title "${tag}"
+              --generate-notes
+              --verify-tag
+            )
+
+            release_version="${tag%-kernel-5.14.0-645.el9}"
+            if [[ "${release_version}" == *-* ]]; then
+              args+=(--prerelease)
+            fi
+
+            gh "${args[@]}"
+          fi
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: centos-stream-9-kernel-5.14.0-645.el9-${{ github.ref_name }}
+          path: |
+            ${{ steps.assets.outputs.iso }}
+            ${{ steps.assets.outputs.packages }}
+            live-iso-5.14.0-645.el9/out/SHA256SUMS
+            live-iso-5.14.0-645.el9/out/KERNEL_RPM_SHA256SUMS
+            live-iso-5.14.0-645.el9/out/PINNED_KERNEL_RPMS.txt
+            live-iso-5.14.0-645.el9/out/KOJI_BUILD_INFO.txt
+            live-iso-5.14.0-645.el9/out/KERNEL_PIN_VERIFIED.txt
+            live-iso-5.14.0-645.el9/out/UPSTREAM_COMMIT.txt
+            live-iso-5.14.0-645.el9/out/BUILD_INFO.txt
+          if-no-files-found: error
+          retention-days: 30
