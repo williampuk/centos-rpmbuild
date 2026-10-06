@@ -297,11 +297,48 @@ KIWI c9s recipe (commit recorded per build)</div>
 <p>The pinned variant has dedicated workflows, so changes do not interfere with the normal Stream 9 image:</p>
 <pre><code>.github/workflows/
 ├── build-live-iso-kernel-5.14.0-645-el9.yml
-└── release-live-iso-kernel-5.14.0-645-el9.yml</code></pre>
-<p>The release workflow intentionally uses a separate tag namespace:</p>
-<pre><code>v0.0.1-kernel-5.14.0-645.el9
-v0.0.2-beta-kernel-5.14.0-645.el9</code></pre>
-<p>The ordinary rolling release workflow matches <code>v*</code> but explicitly excludes <code>v*-kernel-*</code>, so a kernel-specific tag triggers only this pinned-kernel workflow.</p>
+└── release-live-iso-kernel-5.14.0-645.el9.yml</code></pre>
+
+<h3>Build-selection tag vs public release tag</h3>
+<p>The kernel-specific suffix exists to tell CI <em>which image variant to build</em>. It does not have to become the public release version.</p>
+<div class="arch">trigger tag
+v0.0.1-beta-kernel-5.14.0-645.el9
+        │
+        │ select pinned-kernel workflow
+        │ strip "-kernel-5.14.0-645.el9"
+        ▼
+public release tag
+v0.0.1-beta</div>
+
+<p>Stable example:</p>
+<pre><code>git tag v0.0.1-kernel-5.14.0-645.el9
+git push origin v0.0.1-kernel-5.14.0-645.el9
+
+# GitHub Release:
+v0.0.1</code></pre>
+
+<p>Prerelease example:</p>
+<pre><code>git tag v0.0.1-beta-kernel-5.14.0-645.el9
+git push origin v0.0.1-beta-kernel-5.14.0-645.el9
+
+# GitHub Release:
+v0.0.1-beta</code></pre>
+
+<h3>Why this does not trigger the rolling image</h3>
+<p>The rolling Stream 9 workflow now matches only:</p>
+<pre><code>v*-el9</code></pre>
+<p>For example, its releases are <code>v0.0.1-el9</code> and <code>v0.0.1-beta-el9</code>. The pinned workflow matches <code>v*-kernel-5.14.0-645.el9</code>. The short tag created for the public pinned release, such as <code>v0.0.1-beta</code>, matches neither workflow, so creating it does not start another image build.</p>
+
+<h3>Safety check</h3>
+<p>Before publishing, the pinned workflow checks whether the derived short tag already exists. If it exists but points to a different commit than the long trigger tag, the workflow fails. If it does not exist, GitHub creates it at the exact commit being built.</p>
+
+<table>
+<tr><th>Trigger tag</th><th>Image</th><th>Public release</th></tr>
+<tr><td><code>v0.0.1-el9</code></td><td>rolling Stream 9</td><td><code>v0.0.1-el9</code></td></tr>
+<tr><td><code>v0.0.1-beta-el9</code></td><td>rolling Stream 9</td><td><code>v0.0.1-beta-el9</code></td></tr>
+<tr><td><code>v0.0.1-kernel-5.14.0-645.el9</code></td><td>pinned kernel</td><td><code>v0.0.1</code></td></tr>
+<tr><td><code>v0.0.1-beta-kernel-5.14.0-645.el9</code></td><td>pinned kernel</td><td><code>v0.0.1-beta</code></td></tr>
+</table>
 </section>
 
 <section id="glossary">
