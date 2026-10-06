@@ -3,8 +3,7 @@ name: Release CentOS Stream 9 Live RPM Builder ISO
 on:
   push:
     tags:
-      - "v*"
-      - "!v*-kernel-*"
+      - "v*-el9"
 
 permissions:
   contents: write
@@ -125,8 +124,8 @@ jobs:
               --verify-tag
             )
 
-            # SemVer-style suffixes such as -beta, -rc.1, etc. are prereleases.
-            if [[ "${tag}" == *-* ]]; then
+            release_version="${tag%-el9}"
+            if [[ "${release_version}" == *-* ]]; then
               args+=(--prerelease)
             fi
 
