@@ -226,6 +226,15 @@ The corresponding workflow is:
 
 Release assets include the ISO, package manifest, kernel-verification evidence, kernel-RPM checksums, upstream recipe commit, and build information.
 
+### Tag routing summary
+
+| Tag | Workflow |
+| --- | --- |
+| `v0.0.1` | normal rolling Stream 9 Live ISO |
+| `v0.0.1-beta` | normal rolling prerelease |
+| `v0.0.1-kernel-5.14.0-645.el9` | pinned-kernel Live ISO |
+| `v0.0.1-beta-kernel-5.14.0-645.el9` | pinned-kernel prerelease |
+
 ## Security consequence of pinning
 
 The pin exists for compatibility, but it deliberately prevents the kernel from following later Stream 9 security/bug-fix updates.
