@@ -53,6 +53,7 @@ jobs:
             live-iso-5.14.0-645.el9/out/SHA256SUMS
             live-iso-5.14.0-645.el9/out/KERNEL_RPM_SHA256SUMS
             live-iso-5.14.0-645.el9/out/PINNED_KERNEL_RPMS.txt
+            live-iso-5.14.0-645.el9/out/KOJI_BUILD_INFO.txt
             live-iso-5.14.0-645.el9/out/KERNEL_PIN_VERIFIED.txt
             live-iso-5.14.0-645.el9/out/UPSTREAM_COMMIT.txt
             live-iso-5.14.0-645.el9/out/BUILD_INFO.txt
