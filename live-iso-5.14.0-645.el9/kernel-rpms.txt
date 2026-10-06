@@ -1,10 +1,12 @@
-# RPM names downloaded from the exact Koji build in config.env.
-# All of these must resolve to KERNEL_VERSION-KERNEL_RELEASE.
+# Exact kernel RPM family downloaded from the Koji build in config.env.
+# These packages are expected to be x86_64 and exactly KERNEL_VERSION-KERNEL_RELEASE.
+#
+# kernel-devel is the important package for out-of-tree driver/module compilation.
+# kernel-modules-extra is kept to maximize hardware/driver coverage in the Live environment.
 kernel
 kernel-core
 kernel-modules-core
 kernel-modules
 kernel-modules-extra
 kernel-devel
-kernel-devel-matched
 kernel-headers
