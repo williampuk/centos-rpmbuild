@@ -51,7 +51,7 @@ Installing `chkconfig` can therefore fix **that specific compatibility problem**
 
 The image also includes `kernel-devel`. This package provides the kernel build files used by software that compiles external kernel modules, including the `/lib/modules/<kernel-version>/build` tree expected by many vendor installers.
 
-CentOS Stream 9 also provides `kernel-devel-matched`, a meta-package that explicitly pulls in matching `kernel-core` and `kernel-devel` versions. This image currently installs `kernel-devel` directly because that is the required package; KIWI resolves it together with the current Stream 10 image package set.
+CentOS Stream 9 also provides `kernel-devel-matched`, a meta-package that explicitly pulls in matching `kernel-core` and `kernel-devel` versions. This image currently installs `kernel-devel` directly because that is the required package; KIWI resolves it together with the current Stream 9 image package set.
 
 ## Networking toolkit
 
@@ -178,34 +178,48 @@ The ISO file itself can live on another USB stick, SSD, local partition, or netw
 
 ## Releases
 
-A dedicated workflow at `.github/workflows/release-live-iso.yml` creates GitHub Releases from version tags beginning with `v`.
+The rolling CentOS Stream 9 image uses tags ending in `-el9`.
 
-Examples:
-
-```bash
-git tag v0.0.1
-git push origin v0.0.1
-```
-
-or a prerelease:
+Stable example:
 
 ```bash
-git tag v0.0.1-beta
-git push origin v0.0.1-beta
+git tag v0.0.1-el9
+git push origin v0.0.1-el9
 ```
+
+Prerelease example:
+
+```bash
+git tag v0.0.1-beta-el9
+git push origin v0.0.1-beta-el9
+```
+
+The workflow at `.github/workflows/release-live-iso.yml` matches:
+
+```yaml
+tags:
+  - "v*-el9"
+```
+
+The GitHub Release uses the same tag as the trigger. Therefore:
+
+```text
+v0.0.1-el9
+    └── stable rolling Stream 9 release
+
+v0.0.1-beta-el9
+    └── rolling Stream 9 prerelease
+```
+
+For prerelease detection, the workflow first removes the platform suffix `-el9`. This means `v0.0.1-el9` is correctly treated as stable, while `v0.0.1-beta-el9` is treated as a prerelease.
 
 The workflow:
-
 1. checks out the exact tagged commit;
 2. builds the Live ISO;
-3. renames it to include the tag, for example:
-   `centos-stream-9-rpm-builder-live-v0.0.1-x86_64.iso`;
+3. renames the ISO and package manifest to include the tag;
 4. regenerates `SHA256SUMS`;
-5. creates `BUILD_INFO.txt` containing the release tag, repository commit, architecture, and upstream CentOS KIWI commit;
-6. creates a GitHub Release with generated release notes;
-7. marks tags containing a suffix such as `-beta` or `-rc.1` as prereleases;
-8. uploads the ISO, KIWI package manifest, checksum, upstream commit, and build-info file as release assets.
+5. creates `BUILD_INFO.txt`;
+6. creates or updates the GitHub Release;
+7. uploads the ISO, package manifest, checksum, upstream commit, and build information.
 
-The normal release workflow accepts version tags such as `v0.0.1`, `v1.2.3-beta`, and `v2.0.0-rc.1`, but explicitly excludes `v*-kernel-*`. Kernel-specific variants such as `v0.0.1-kernel-5.14.0-645.el9` are handled by their dedicated release workflow.
-
-If a release already exists for the tag and the workflow is rerun, the workflow replaces the assets instead of trying to create a duplicate release.
+The pinned-kernel variant uses a different trigger tag and release model; see `live-iso-5.14.0-645.el9/README.md`.

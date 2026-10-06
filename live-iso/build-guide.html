@@ -221,8 +221,8 @@ live-iso/out/UPSTREAM_COMMIT.txt</code></pre>
 
 <h3>The KIWI package manifest</h3>
 <p>KIWI emits a <code>*.packages</code> file containing the package set actually present in the image. Both the ordinary CI build and tagged release workflow now preserve that file alongside the ISO.</p>
-<pre><code>CentOS-Stream-Image.x86_64-10.iso
-CentOS-Stream-Image.x86_64-10.packages
+<pre><code>CentOS-Stream-Image.x86_64-9.iso
+CentOS-Stream-Image.x86_64-9.packages
 SHA256SUMS
 UPSTREAM_COMMIT.txt</code></pre>
 <p>This is much stronger than guessing from the upstream profile: for any particular build, the manifest is the authoritative answer to “what packages are inside this ISO?”</p>
@@ -313,6 +313,26 @@ systemctl start SERVICE
 systemctl status SERVICE</code></pre>
 <p>Some older vendor installers still execute commands such as <code>chkconfig --add ...</code> to register a service. If <code>chkconfig</code> is missing, the installer may abort or leave the service setup incomplete.</p>
 <div class="box warn"><b>Important:</b> installing <code>chkconfig</code> only helps when the installer actually depends on it. If the machine hangs during reboot because of a bad kernel module, shutdown hook, storage/network driver, or another kernel-level problem, <code>chkconfig</code> will not fix that underlying issue.</div>
+</section>
+
+<section>
+<h2>Release tag routing</h2>
+<p>The rolling CentOS Stream 9 image is released only from tags ending in <code>-el9</code>:</p>
+<pre><code>v0.0.1-el9
+v0.0.1-beta-el9</code></pre>
+<p>The GitHub Release keeps that same tag. Before deciding whether a release is a prerelease, the workflow removes the platform suffix:</p>
+<div class="arch">v0.0.1-el9
+   │ strip -el9
+   ▼
+v0.0.1
+   └── stable
+
+v0.0.1-beta-el9
+   │ strip -el9
+   ▼
+v0.0.1-beta
+   └── prerelease</div>
+<p>The separately pinned <code>5.14.0-645.el9</code> image uses a different long trigger tag, so the two workflows do not overlap.</p>
 </section>
 
 <section id="security">
